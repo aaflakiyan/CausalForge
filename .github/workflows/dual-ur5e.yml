@@ -4,6 +4,8 @@ on:
     branches: [main, "feature/dual-ur5e-benchmark"]
   pull_request:
   workflow_dispatch:
+permissions:
+  contents: write
 jobs:
   dual-ur5e:
     runs-on: ubuntu-latest
@@ -35,6 +37,18 @@ jobs:
           sudo apt-get install -y libosmesa6 libosmesa6-dev
           python -m pip install imageio pillow
           python -m vla_council.causalforge.dual_ur5e --menagerie "$CAUSALFORGE_MENAGERIE" --episodes 1 --out runs/dual-ur5e-render.json --render runs/dual-ur5e.gif
+      - name: Commit verified MuJoCo render to the feature branch
+        if: github.ref == 'refs/heads/feature/dual-ur5e-benchmark' && github.event_name == 'push'
+        run: |
+          mkdir -p docs/media
+          cp runs/dual-ur5e.gif docs/media/dual-ur5e-actual.gif
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/media/dual-ur5e-actual.gif
+          if ! git diff --cached --quiet; then
+            git commit -m "docs: add actual dual UR5e MuJoCo render"
+            git push origin HEAD:feature/dual-ur5e-benchmark
+          fi
       - uses: actions/upload-artifact@v4
         if: always()
         with:
