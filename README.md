@@ -12,6 +12,18 @@
 
 > **Research prototype, not a humanoid foundation model.** The executable teacher/student examples are synthetic. No GR00T, OpenPI, SmolVLA, real robot deployment, or safety certification is included. The MuJoCo integration is separately installable and has passed hosted GitHub Actions tests; it remains unverified on real hardware.
 
+## Reproduce and inspect the MuJoCo scenes
+
+The **exact** one-axis MJCF pusher model is checked in at [assets/mujoco/pusher.xml](assets/mujoco/pusher.xml). See [SIMULATION_ENVIRONMENTS.md](SIMULATION_ENVIRONMENTS.md) for model limitations and reproduction commands. This is a constrained slider with zero gravity, **not** a Panda or humanoid environment.
+
+```bash
+python -m pip install -e '.[mujoco]'
+python -m vla_council.causalforge.simulate_scene --out runs/scene --force 7 --duration 0.8
+python -m vla_council.causalforge.rollout_actions examples/pusher_policy_chunk.json --out runs/policy-replay.json
+```
+
+The scene command produces trajectory CSV and summary JSON; `--render` additionally requires `imageio` and a working OpenGL context. The recorded-action replay validates actuator semantics (unit, frame, timestep, bounds) before applying commands to the MuJoCo model. The example is **synthetic**: no GR00T or pi0 inference has been run.
+
 ## Research question
 
 Can *testable disagreements* among specialised robot policies be converted into cheap, targeted physical experiments, providing better supervision for a compact student policy than standard imitation or unverified model voting?
