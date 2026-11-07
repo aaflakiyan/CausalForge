@@ -21,7 +21,7 @@ Rather than simply averaging action predictions, CausalForge tests candidate exp
 
 *Actual MuJoCo camera frames, rendered headlessly with OSMesa in GitHub Actions. Both models retain six articulated joints. The GIF shows a scripted coordinated-reach motion, not pretrained VLA inference.*
 
-The new [dual-UR5e benchmark](DUAL_UR5E_BENCHMARK.md) uses real [MuJoCo Menagerie UR5e models](https://github.com/google-deepmind/mujoco_menagerie/tree/main/universal_robots_ur5e) facing one another across a shared workspace. It tests five scripted candidate motion policies, right-arm actuation disturbances, fault-diagnosis probes and a physics-backed teacher-selection council.
+The new [dual-UR5e benchmark](DUAL_UR5E_BENCHMARK.md) and its [five-seed validated results](DUAL_UR5E_RESULTS.md) uses real [MuJoCo Menagerie UR5e models](https://github.com/google-deepmind/mujoco_menagerie/tree/main/universal_robots_ur5e) facing one another across a shared workspace. It tests five scripted candidate motion policies, right-arm actuation disturbances, fault-diagnosis probes and a physics-backed teacher-selection council.
 
 | Method (30 paired scenarios, one seed) | Mean end-effector error | Probe cost |
 | --- | ---: | ---: |
