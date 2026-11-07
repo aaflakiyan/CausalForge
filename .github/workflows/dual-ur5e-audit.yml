@@ -5,7 +5,7 @@ on:
   pull_request:
   workflow_dispatch:
 permissions:
-  contents: write
+  contents: read
 jobs:
   audit:
     runs-on: ubuntu-latest
@@ -43,20 +43,6 @@ jobs:
           sudo apt-get install -y libosmesa6 libosmesa6-dev
           python -m pip install imageio pillow
           python -m vla_council.causalforge.dual_ur5e_reach --menagerie third_party/mujoco_menagerie --out runs/dual-ur5e-reach-render.json --trace --render runs/dual-ur5e-reach.gif
-      - name: Publish rendered, tested simulation on feature branch
-        if: github.event_name == 'push' && github.ref == 'refs/heads/fix/dual-ur5e-meaningful-task'
-        run: |
-          mkdir -p docs/media
-          cp runs/dual-ur5e-reach.gif docs/media/dual-ur5e-cartesian-reach.gif
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add docs/media/dual-ur5e-cartesian-reach.gif
-          if ! git diff --cached --quiet; then
-            git commit -m "docs: publish validated Cartesian reaching camera GIF"
-            git fetch origin fix/dual-ur5e-meaningful-task
-            git rebase origin/fix/dual-ur5e-meaningful-task
-            git push origin HEAD:fix/dual-ur5e-meaningful-task
-          fi
       - uses: actions/upload-artifact@v4
         if: always()
         with:
