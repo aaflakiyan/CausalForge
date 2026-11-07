@@ -15,6 +15,23 @@ Can disagreements between robot policies become **targeted physical experiments*
 
 Rather than simply averaging action predictions, CausalForge tests candidate explanations, selects bounded diagnostic probes, evaluates feasible actions, and distils resulting decisions. It is intended as a reproducible testbed for this research question — not a claim that multi-teacher learning already outperforms established baselines.
 
+## Two facing Universal Robots UR5e — real MuJoCo simulation
+
+![Two official MuJoCo Menagerie UR5e robot arms facing each other across a shared table](docs/media/dual-ur5e-actual.gif)
+
+*Actual MuJoCo camera frames, rendered headlessly with OSMesa in GitHub Actions. Both models retain six articulated joints. The GIF shows a scripted coordinated-reach motion, not pretrained VLA inference.*
+
+The new [dual-UR5e benchmark](DUAL_UR5E_BENCHMARK.md) uses real [MuJoCo Menagerie UR5e models](https://github.com/google-deepmind/mujoco_menagerie/tree/main/universal_robots_ur5e) facing one another across a shared workspace. It tests five scripted candidate motion policies, right-arm actuation disturbances, fault-diagnosis probes and a physics-backed teacher-selection council.
+
+| Method (30 paired scenarios, one seed) | Mean end-effector error | Probe cost |
+| --- | ---: | ---: |
+| No diagnostic probe | 22.30 mm | 0 s |
+| Fixed left-arm probe | 22.30 mm | 0.22 s |
+| Random left/right probe | 17.92 mm | 0.22 s |
+| **Disagreement-driven active probe** | **14.21 mm** | 0.22 s |
+
+The active probe improves mean error in this **scripted-model benchmark**. There were zero inter-arm contacts in these trials; that does *not* establish robust collision avoidance. All model predictions use the same UR model as evaluation, except for a withheld right-arm tracking disturbance. **These results are not evidence of improved pretrained VLA or sim-to-real performance.** The [reproducible GitHub workflow](.github/workflows/dual-ur5e.yml) downloads the genuine licensed meshes, runs validation and stores the trajectories, performance report and renderer output.
+
 ## Watch the simulation
 
 ![Animated schematic of the verified MuJoCo tabletop trajectories](docs/media/tabletop-replay.svg)
