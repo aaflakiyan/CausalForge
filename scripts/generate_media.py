@@ -74,8 +74,8 @@ def generate(out: Path):
     out.mkdir(parents=True, exist_ok=True)
     traces = [
         ("nominal", run_pusher(Physics(1.0, 0.5), 7, 0.8, stride=50)[0], "#2563eb"),
-        ("weak motor", run_pusher(Physics(0.45, 0.5), 7, 0.8, stride=50)[0], "#e27d39"),
-        ("heavy payload", run_pusher(Physics(1.0, 1.2), 7, 0.8, stride=50)[0], "#16a34a"),
+        ("weak motor", run_pusher(Physics(0.42, 0.5), 7, 0.8, stride=50)[0], "#e27d39"),
+        ("heavy payload", run_pusher(Physics(1.0, 3.0), 7, 0.8, stride=50)[0], "#16a34a"),
     ]
     low, _ = run_tabletop(force=7, friction=0.2, payload_mass=0.5, duration=1.0, stride=50)
     high, _ = run_tabletop(force=7, friction=1.2, payload_mass=0.5, duration=1.0, stride=50)
