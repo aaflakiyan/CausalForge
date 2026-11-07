@@ -1,5 +1,8 @@
 # Dual-UR5e distilled plan student — held-out MuJoCo result
 
+> **Historical benchmark — do not use as evidence of validated active-learning superiority.** The original demonstration used small joint-offset motions with tool sites roughly 1.92 m apart and a known right-side setpoint fault. It did not test shared-workspace manipulation, contact avoidance or pretrained VLA learning. See the independently verified [corrected Cartesian-reaching audit](DUAL_UR5E_AUDIT.md), where active probing is shown to **tie** with a fixed right-arm probe.
+
+
 The small student learns **which scripted joint-space plan to execute**, based only on goal magnitude and the council's posterior belief about right-arm tracking. It is not a VLA and does not generate continuous 12-DoF trajectories.
 
 ## Experimental protocol

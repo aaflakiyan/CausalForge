@@ -1,5 +1,8 @@
 # Two facing Universal Robots UR5e arms — MuJoCo validation
 
+> **Historical benchmark — do not use as evidence of validated active-learning superiority.** The original demonstration used small joint-offset motions with tool sites roughly 1.92 m apart and a known right-side setpoint fault. It did not test shared-workspace manipulation, contact avoidance or pretrained VLA learning. See the independently verified [corrected Cartesian-reaching audit](DUAL_UR5E_AUDIT.md), where active probing is shown to **tie** with a fixed right-arm probe.
+
+
 ## Actual robot source
 Uses [Google DeepMind MuJoCo Menagerie UR5e](https://github.com/google-deepmind/mujoco_menagerie/tree/main/universal_robots_ur5e), BSD-3-Clause. Downloaded from upstream in CI rather than replacing genuine robot geometry with a hand-made approximated arm. The left base is (-0.73, 0, 0.78) metres, and right base (+0.73, 0, 0.78) metres, rotated 180 degrees around vertical. Their six joints and six actuators each form a 12-DoF system.
 

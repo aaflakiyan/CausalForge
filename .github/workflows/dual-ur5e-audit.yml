@@ -1,0 +1,50 @@
+name: Audit dual UR5e workspace
+on:
+  push:
+    branches: [main, fix/dual-ur5e-meaningful-task]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m pip install -e '.[mujoco]'
+      - run: |
+          git clone --depth 1 --filter=blob:none --sparse https://github.com/google-deepmind/mujoco_menagerie.git third_party/mujoco_menagerie
+          git -C third_party/mujoco_menagerie fetch --depth 1 origin 98a70c569c4c1b6da467a20012f766ee1f8dc521
+          git -C third_party/mujoco_menagerie checkout FETCH_HEAD
+          git -C third_party/mujoco_menagerie sparse-checkout set universal_robots_ur5e
+          mkdir -p runs
+          git -C third_party/mujoco_menagerie rev-parse HEAD > runs/menagerie-revision.txt
+      - run: python -m vla_council.causalforge.dual_ur5e_audit --menagerie third_party/mujoco_menagerie
+      - name: Validate workspace-reach geometry and tracking
+        env:
+          CAUSALFORGE_MENAGERIE: ${{ github.workspace }}/third_party/mujoco_menagerie
+        run: |
+          python -m unittest discover -s tests -p 'test_dual_ur5e_reach.py' -v
+          python -m vla_council.causalforge.dual_ur5e_reach --menagerie "$CAUSALFORGE_MENAGERIE" --out runs/dual-ur5e-reach.json
+      - name: Test fault-aware teacher selection on Cartesian reach
+        env:
+          CAUSALFORGE_MENAGERIE: ${{ github.workspace }}/third_party/mujoco_menagerie
+        run: |
+          python -m unittest discover -s tests -p 'test_dual_ur5e_recovery.py' -v
+          python -m vla_council.causalforge.dual_ur5e_recovery --menagerie "$CAUSALFORGE_MENAGERIE" --episodes 18 --out runs/dual-ur5e-recovery.json
+      - name: Render verified Cartesian reaching motion
+        env:
+          MUJOCO_GL: osmesa
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y libosmesa6 libosmesa6-dev
+          python -m pip install imageio pillow
+          python -m vla_council.causalforge.dual_ur5e_reach --menagerie third_party/mujoco_menagerie --out runs/dual-ur5e-reach-render.json --trace --render runs/dual-ur5e-reach.gif
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: dual-ur5e-reach-validation
+          path: runs/*
