@@ -8,8 +8,14 @@ from vla_council.causalforge.dual_ur5e_policy import (
 )
 from vla_council.causalforge.vla_interface import ActionChunk, ActionSpec
 from vla_council.causalforge.quickstart import locate_menagerie
+from vla_council.causalforge.vla_bridge import (
+    ExplicitActionMapping, VLABackend, SingleArmMapping,
+    DualArmComposer, evaluate_teachers,
+)
 
 __all__ = [
     "ActionChunk", "ActionSpec", "BuiltinReachPolicy", "SPEC",
     "evaluate", "locate_menagerie",
+    "ExplicitActionMapping", "VLABackend", "SingleArmMapping",
+    "DualArmComposer", "evaluate_teachers",
 ]
