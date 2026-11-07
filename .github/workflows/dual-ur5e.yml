@@ -27,7 +27,7 @@ jobs:
           CAUSALFORGE_MENAGERIE: ${{ github.workspace }}/third_party/mujoco_menagerie
         run: |
           python -m unittest discover -s tests -p 'test_dual_ur5e.py' -v
-          python -m vla_council.causalforge.dual_ur5e --menagerie "$CAUSALFORGE_MENAGERIE" --episodes 6 --duration 1.5 --out runs/dual-ur5e.json
+          python -m vla_council.causalforge.dual_ur5e --menagerie "$CAUSALFORGE_MENAGERIE" --episodes 30 --duration 1.5 --out runs/dual-ur5e.json
       - name: Render actual MuJoCo UR5e frames (OSMesa)
         env:
           CAUSALFORGE_MENAGERIE: ${{ github.workspace }}/third_party/mujoco_menagerie
