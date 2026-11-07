@@ -1,0 +1,28 @@
+name: Multi-VLA adapter compatibility
+on:
+  push:
+    branches: [main, feature/multi-vla-adapters]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  adapters:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install -e '.[mujoco]'
+      - name: Download official pinned UR5e model
+        run: |
+          git clone --depth 1 --filter=blob:none --sparse https://github.com/google-deepmind/mujoco_menagerie.git third_party/mujoco_menagerie
+          git -C third_party/mujoco_menagerie fetch --depth 1 origin 98a70c569c4c1b6da467a20012f766ee1f8dc521
+          git -C third_party/mujoco_menagerie checkout FETCH_HEAD
+          git -C third_party/mujoco_menagerie sparse-checkout set universal_robots_ur5e
+      - name: Check all VLA adapter contracts and two-teacher real MuJoCo run
+        env:
+          CAUSALFORGE_MENAGERIE: ${{ github.workspace }}/third_party/mujoco_menagerie
+        run: python -m unittest discover -s tests -p 'test_vla_bridge.py' -v
