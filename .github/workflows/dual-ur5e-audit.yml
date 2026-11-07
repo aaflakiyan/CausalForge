@@ -22,6 +22,12 @@ jobs:
         run: |
           python -m unittest discover -s tests -p 'test_dual_ur5e_reach.py' -v
           python -m vla_council.causalforge.dual_ur5e_reach --menagerie "$CAUSALFORGE_MENAGERIE" --out runs/dual-ur5e-reach.json
+      - name: Test fault-aware teacher selection on Cartesian reach
+        env:
+          CAUSALFORGE_MENAGERIE: ${{ github.workspace }}/third_party/mujoco_menagerie
+        run: |
+          python -m unittest discover -s tests -p 'test_dual_ur5e_recovery.py' -v
+          python -m vla_council.causalforge.dual_ur5e_recovery --menagerie "$CAUSALFORGE_MENAGERIE" --episodes 18 --out runs/dual-ur5e-recovery.json
       - name: Render verified Cartesian reaching motion
         env:
           MUJOCO_GL: osmesa
