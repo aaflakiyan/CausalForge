@@ -3,7 +3,7 @@
 ## Actual robot source
 Uses [Google DeepMind MuJoCo Menagerie UR5e](https://github.com/google-deepmind/mujoco_menagerie/tree/main/universal_robots_ur5e), BSD-3-Clause. Downloaded from upstream in CI rather than replacing genuine robot geometry with a hand-made approximated arm. The left base is (-0.73, 0, 0.78) metres, and right base (+0.73, 0, 0.78) metres, rotated 180 degrees around vertical. Their six joints and six actuators each form a 12-DoF system.
 
-The CI job records the exact Menagerie Git revision in the downloadable artifact.
+The CI job checks out the pinned Menagerie commit `98a70c569c4c1b6da467a20012f766ee1f8dc521`, uses MuJoCo `3.17.0`, and records the source revision in the downloadable artifact.
 
 ## Evaluating the proposed method
 
@@ -20,6 +20,7 @@ First install MuJoCo, then retrieve the licensed source model:
     pip install -e '.[mujoco]'
     git clone --depth 1 --filter=blob:none --sparse https://github.com/google-deepmind/mujoco_menagerie.git third_party/mujoco_menagerie
     git -C third_party/mujoco_menagerie sparse-checkout set universal_robots_ur5e
+    git -C third_party/mujoco_menagerie checkout 98a70c569c4c1b6da467a20012f766ee1f8dc521
     export CAUSALFORGE_MENAGERIE="$PWD/third_party/mujoco_menagerie"
     python -m unittest discover -s tests -p 'test_dual_ur5e.py' -v
     python -m vla_council.causalforge.dual_ur5e --menagerie "$CAUSALFORGE_MENAGERIE" --episodes 6 --duration 1.5 --out runs/dual-ur5e.json
