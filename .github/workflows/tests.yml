@@ -33,6 +33,12 @@ jobs:
       - run: python -m vla_council.causalforge.benchmark --backend mujoco --trials 4 --out runs/benchmark-mujoco.json
       - run: python -m vla_council.causalforge.ood_benchmark --backend mujoco --episodes 3 --out runs/ood-mujoco-ci.json
       - run: python -m vla_council.causalforge.physical_distillation --backend mujoco --train 36 --test 24 --out runs/student-mujoco-ci.json
+      - name: Independent-seed MuJoCo student comparison
+        run: |
+          for seed in 41 42 43 44 45; do
+            python -m vla_council.causalforge.physical_distillation --backend mujoco --train 36 --test 24 --seed "$seed" --out "runs/student-mujoco-seed-$seed.json"
+          done
+          python -m vla_council.causalforge.aggregate_physics runs/student-mujoco-seed-*.json --out runs/student-mujoco-aggregate.json
       - uses: actions/upload-artifact@v4
         if: always()
         with:
