@@ -29,4 +29,4 @@ Optional rendered video (requires a working OpenGL/EGL installation):
     pip install imageio pillow
     MUJOCO_GL=egl python -m vla_council.causalforge.dual_ur5e --menagerie "$CAUSALFORGE_MENAGERIE" --episodes 1 --out runs/preview.json --render runs/dual-ur5e.gif
 
-Follow the GitHub Actions benchmark artifact for verified numbers. The model does not represent UR16e specifically, and this is not a real-hardware safety assessment.
+For verified five-seed numbers, including the poor unseen-fault result, see [DUAL_UR5E_RESULTS.md](DUAL_UR5E_RESULTS.md). The robot recording is in [docs/media/dual-ur5e-actual.gif](docs/media/dual-ur5e-actual.gif). Follow the GitHub Actions benchmark artifact for the raw JSON. The model does not represent UR16e specifically, and this is not a real-hardware safety assessment.
