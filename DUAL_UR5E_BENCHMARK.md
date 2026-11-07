@@ -7,7 +7,7 @@ The CI job records the exact Menagerie Git revision in the downloadable artifact
 
 ## Evaluating the proposed method
 
-Four scripted teacher policies propose robot joint trajectories: synchronous, left-first, right-first, and conservative. These are *not* pretrained VLA teachers. Competing right-arm tracking hypotheses are 1.0 (nominal) and 0.45 (degraded); 0.70 is an unseen configuration.
+Five scripted teacher policies propose robot joint trajectories: synchronous, left-first, right-first, conservative, and right-arm compensation (1.9x right-joint motion, which can improve weak actuation but overshoot under normal conditions). These are *not* pretrained VLA teachers. Competing right-arm tracking hypotheses are 1.0 (nominal) and 0.45 (degraded); 0.70 is an unseen configuration.
 
 Compare no probe, a fixed left-arm probe, a randomly chosen left/right probe, and a disagreement-driven probe. All active/fixed/random probes have equal duration and angular amplitude. The council uses its posterior belief to select the lowest expected end-effector error plus inter-arm collision penalty. It never sees the hidden true tracking scale; only oracle metrics use truth.
 
