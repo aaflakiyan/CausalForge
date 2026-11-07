@@ -66,6 +66,31 @@ mapping = ExplicitActionMapping(source, degrees_to_radians=True)
 
 This performs a verified permutation and degree-to-radian conversion, *not* a learned or heuristic interpretation of VLA outputs.
 
+## Real camera images from the simulator
+
+The dual-UR5e evaluator now supports a genuine offscreen MuJoCo RGB frame. This makes visual inputs available to model-specific preprocessing, instead of pretending every vision model can infer from joint states alone.
+
+```python
+import causalforge
+report = causalforge.evaluate(
+    policy=my_vla_adapter,
+    robot="ur5e-dual", task="reach",
+    menagerie="/path/to/mujoco_menagerie",
+    include_rgb=True,
+)
+```
+
+The policy observation contains:
+- `rgb_overview`: actual `uint8` RGB image `[240, 320, 3]` from the MuJoCo overview camera;
+- `camera_frame`: `mujoco/overview`, and `camera_image_encoding`: `RGB8`;
+- `joint_positions_rad`: the starting states of all 12 joints;
+- `goal_xyz_m`: two world-frame 3D tool goals;
+- `task_instruction`: a natural-language reach instruction.
+
+You **must** implement the model's own image preprocessing, language/state keys, normalisation and batch dimensions in `observation_adapter`. An arbitrary pretrained model may require wrist cameras, a gripper, depth, different robot coordinates or fine-tuning; CausalForge does not fabricate these signals or assume an unsupported model can control a UR5e. This is a **single initial RGB frame and open-loop action chunk**, not a closed-loop camera-at-every-timestep controller.
+
+Rendering requires a compatible MuJoCo OpenGL/EGL/OSMesa setup. The CI workflow `vla-camera.yml` checks that the image comes from an actual rendered robot scene and that the policy still completes the task.
+
 ## Explicit action-frequency conversion
 
 Many VLA policies run at a different frequency from the 50 Hz UR5e command interface. There is now a **strict opt-in** linear interpolation for absolute joint targets at a slower period that is an exact integer multiple of the 20 ms controller tick.

@@ -101,6 +101,9 @@ def evaluate(
     menagerie: str | Path,
     goals: np.ndarray = GOALS,
     record_trace: bool = False,
+    include_rgb: bool = False,
+    image_width: int = 320,
+    image_height: int = 240,
 ) -> dict:
     """Evaluate a joint-position policy on verified MuJoCo dual-arm reaching.
 
@@ -122,7 +125,23 @@ def evaluate(
         "goal_xyz_m":goals.copy(),
         "control_dt_s":DT,
         "action_spec":SPEC,
+        "task_instruction":"Reach the two coloured target markers above the shared workbench.",
     }
+    if include_rgb:
+        if not (64 <= image_width <= 1024 and 64 <= image_height <= 1024):
+            raise ValueError("Image dimensions must be within [64,1024]")
+        import mujoco
+        renderer = mujoco.Renderer(model, width=image_width, height=image_height)
+        try:
+            renderer.update_scene(data, camera="overview")
+            image = renderer.render().copy()
+        finally:
+            renderer.close()
+        if image.dtype != np.uint8 or image.shape != (image_height, image_width, 3):
+            raise RuntimeError("Unexpected MuJoCo camera output")
+        observation["rgb_overview"] = image
+        observation["camera_frame"] = "mujoco/overview"
+        observation["camera_image_encoding"] = "RGB8"
     proposal = policy.predict(observation)
     commands, substeps = _validate(proposal, model, home_q)
     initial_tool = data.site_xpos[sites].copy()
@@ -150,6 +169,8 @@ def evaluate(
     err = np.linalg.norm(measured-goals,axis=1)
     return {
         "robot":robot, "task":task, "policy_name":proposal.model_name,
+        "observation_included_rgb":bool(include_rgb),
+        "observation_rgb_shape":([image_height,image_width,3] if include_rgb else None),
         "validated_action_spec": {
             "robot":SPEC.robot, "representation":SPEC.representation,
             "ordered_axes":list(SPEC.ordered_axes), "units":list(SPEC.units),

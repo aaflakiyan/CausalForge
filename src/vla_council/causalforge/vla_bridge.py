@@ -224,7 +224,7 @@ class DualArmComposer:
         return ActionChunk(np.hstack([a,b]), SPEC, name)
 
 
-def evaluate_teachers(teachers: dict[str, Any], *, menagerie, record_trace=False) -> dict:
+def evaluate_teachers(teachers: dict[str, Any], *, menagerie, record_trace=False, include_rgb=False) -> dict:
     """Compare independent VLA proposals offline, with fresh MuJoCo resets.
 
     This is a benchmark, NOT a deployed online selector. Observed task outcomes
@@ -237,7 +237,7 @@ def evaluate_teachers(teachers: dict[str, Any], *, menagerie, record_trace=False
     errors={}
     for name,policy in teachers.items():
         try:
-            report=evaluate(policy, menagerie=menagerie, record_trace=record_trace)
+            report=evaluate(policy, menagerie=menagerie, record_trace=record_trace, include_rgb=include_rgb)
             scores[name]=report
         except (ValueError, TypeError, RuntimeError) as exc:
             errors[name]={"type":type(exc).__name__,"message":str(exc)}
