@@ -24,6 +24,19 @@ class DualUR5eReachTests(unittest.TestCase):
         self.assertTrue(all(x > .35 for x in out["actual_ee_displacements_m"]),out)
         self.assertEqual(out["inter_arm_contact_frames"],0,out)
         self.assertEqual(out["table_contact_frames"],0,out)
+    def test_reaching_across_reproducible_nearby_targets(self):
+        from vla_council.causalforge.dual_ur5e_reach import execute, GOALS
+        rng=np.random.default_rng(20261107)
+        for case in range(8):
+            goals=GOALS.copy()
+            goals[:,0] += rng.uniform(-.035,.035,size=2)
+            goals[:,1] += rng.uniform(-.045,.045,size=2)
+            goals[:,2] += rng.uniform(-.03,.03,size=2)
+            result,_=execute(self.model,goals=goals,duration=3.)
+            self.assertLess(max(result["final_goal_errors_m"]),.07,(case,result))
+            self.assertGreater(min(result["actual_ee_displacements_m"]),.7,(case,result))
+            self.assertEqual(result["inter_arm_contact_frames"],0,(case,result))
+            self.assertEqual(result["table_contact_frames"],0,(case,result))
     def test_deterministic_replay(self):
         from vla_council.causalforge.dual_ur5e_reach import execute
         a,_=execute(self.model,duration=3.)
