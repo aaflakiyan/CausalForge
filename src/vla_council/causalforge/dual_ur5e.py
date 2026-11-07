@@ -117,7 +117,7 @@ def targets(model, magnitude):
 
 
 def _factor(teacher, side, t):
-    if teacher == "synchronous":
+    if teacher in ("synchronous", "compensate_right"):
         return min(1., t / .7)
     if teacher == "left_first":
         return min(1., t / .7) if side == 0 else min(1., max(0., t - .42) / .7)
@@ -128,7 +128,7 @@ def _factor(teacher, side, t):
     raise ValueError(f"Unknown teacher: {teacher}")
 
 
-TEACHERS = ("synchronous", "left_first", "right_first", "conservative")
+TEACHERS = ("synchronous", "left_first", "right_first", "conservative", "compensate_right")
 HYPOTHESES = (1.0, .45)
 
 
@@ -152,7 +152,7 @@ def rollout(model, teacher, target_q, target_sites, right_scale=1., duration=1.5
             frac = _factor(teacher, side, t)
             cmd = HOME + frac * (target_q[side] - HOME)
             if side == 1:
-                cmd = HOME + right_scale * (cmd - HOME)
+                cmd = HOME + right_scale * (1.9 if teacher == "compensate_right" else 1.0) * (cmd - HOME)
             data.ctrl[act[side]] = cmd
         mujoco.mj_step(model, data)
         separation = float(np.linalg.norm(data.site_xpos[site_ids[0]] - data.site_xpos[site_ids[1]]))
