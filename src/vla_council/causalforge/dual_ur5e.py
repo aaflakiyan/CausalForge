@@ -221,6 +221,7 @@ def run_benchmark(menagerie: Path, cfg: Config):
         truth = float(HYPOTHESES[episode % 2] if episode % 3 != 2 else .70)
         magnitude = float(rng.uniform(.16, .36))
         goal_q, goal_sites = targets(model, magnitude)
+        paired_sensor_noise = float(rng.normal(0, cfg.noise_rad))
         # Compare all candidates under the true physical condition (oracle only).
         actual = {teacher: rollout(model, teacher, goal_q, goal_sites,
                                    right_scale=truth, duration=cfg.duration_s)[0]
@@ -236,7 +237,7 @@ def run_benchmark(menagerie: Path, cfg: Config):
                 arm = (0 if method == "fixed_left_probe" else
                        int(rng.integers(0, 2)) if method == "random_probe" else active_arm)
                 sensor = probe_result(model, arm, truth, cfg.probe_delta_rad, cfg.probe_s)
-                sensor += float(rng.normal(0, cfg.noise_rad))
+                sensor += paired_sensor_noise
                 belief = posterior(sensor, predictions[arm], cfg.noise_rad)
             # Predict under HYPOTHESES ONLY, never give the planner the withheld truth.
             scores = {}
