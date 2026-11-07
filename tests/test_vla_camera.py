@@ -33,6 +33,28 @@ class VisionObservationsTests(unittest.TestCase):
         self.assertTrue(result["task_success"],result)
         self.assertEqual(result["observation_rgb_shape"],[240,320,3])
 
+    def test_visual_openpi_interface_receives_real_mujoco_rgb(self):
+        from vla_council.causalforge.dual_ur5e_policy import BuiltinReachPolicy,evaluate,SPEC
+        from vla_council.causalforge.vla_bridge import ExplicitActionMapping,VLABackend
+        class VisualMockClient:
+            def __init__(self,model):
+                self.ref=BuiltinReachPolicy(model)
+            def infer(self,observation):
+                return {"actions": self.ref.predict(observation).actions}
+        observed=[]
+        def preprocess(obs):
+            assert obs["rgb_overview"].shape == (240,320,3)
+            assert obs["camera_frame"] == "mujoco/overview"
+            observed.append(float(obs["rgb_overview"].std()))
+            return obs
+        backend=VLABackend(
+            "mock_visual_openpi","openpi",VisualMockClient(self.model),
+            ExplicitActionMapping(SPEC),preprocess)
+        report=evaluate(backend,menagerie=self.root,include_rgb=True)
+        self.assertTrue(report["task_success"],report)
+        self.assertEqual(len(observed),1)
+        self.assertGreater(observed[0],2.0)
+
     def test_invalid_camera_size_rejected(self):
         from vla_council.causalforge.dual_ur5e_policy import BuiltinReachPolicy,evaluate
         with self.assertRaises(ValueError):
