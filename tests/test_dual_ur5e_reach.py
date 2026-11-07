@@ -10,6 +10,10 @@ class DualUR5eReachTests(unittest.TestCase):
     def setUpClass(cls):
         from vla_council.causalforge.dual_ur5e_reach import load_reach_model
         cls.model=load_reach_model(Path(os.environ["CAUSALFORGE_MENAGERIE"]))
+    def test_arena_xml_matches_executed_world_description(self):
+        from vla_council.causalforge.dual_ur5e_reach import reach_arena
+        scene=Path(__file__).resolve().parents[1]/"assets"/"mujoco"/"dual_ur5e_reach_arena.xml"
+        self.assertEqual(scene.read_text(encoding="utf-8"),reach_arena())
     def test_actual_cartesian_task_not_joint_offset(self):
         from vla_council.causalforge.dual_ur5e_reach import GOALS, reset, ids
         data=reset(self.model)
