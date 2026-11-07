@@ -22,8 +22,16 @@ jobs:
         run: |
           python -m unittest discover -s tests -p 'test_dual_ur5e_reach.py' -v
           python -m vla_council.causalforge.dual_ur5e_reach --menagerie "$CAUSALFORGE_MENAGERIE" --out runs/dual-ur5e-reach.json
+      - name: Render verified Cartesian reaching motion
+        env:
+          MUJOCO_GL: osmesa
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y libosmesa6 libosmesa6-dev
+          python -m pip install imageio pillow
+          python -m vla_council.causalforge.dual_ur5e_reach --menagerie third_party/mujoco_menagerie --out runs/dual-ur5e-reach-render.json --render runs/dual-ur5e-reach.gif
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: dual-ur5e-reach-validation
-          path: runs/*.json
+          path: runs/*
