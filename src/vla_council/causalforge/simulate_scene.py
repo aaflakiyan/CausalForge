@@ -34,10 +34,10 @@ def simulate(physics: Physics, force: float, duration: float, stride: int = 10,
     model.body_mass[model.body('payload').id] = physics.payload_mass
     mujoco.mj_setConst(model, data)
     mujoco.mj_forward(model, data)
-    pusher_q = model.joint('pusher_x').qposadr
-    payload_q = model.joint('payload_x').qposadr
-    pusher_v = model.joint('pusher_x').dofadr
-    payload_v = model.joint('payload_x').dofadr
+    pusher_q = int(np.asarray(model.joint('pusher_x').qposadr).item())
+    payload_q = int(np.asarray(model.joint('payload_x').qposadr).item())
+    pusher_v = int(np.asarray(model.joint('pusher_x').dofadr).item())
+    payload_v = int(np.asarray(model.joint('payload_x').dofadr).item())
     steps = round(duration / model.opt.timestep)
     if steps < 1:
         raise ValueError('duration must be at least one physics step')
