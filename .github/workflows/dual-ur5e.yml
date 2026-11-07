@@ -33,6 +33,12 @@ jobs:
           CAUSALFORGE_MENAGERIE: ${{ github.workspace }}/third_party/mujoco_menagerie
         run: |
           python -m vla_council.causalforge.dual_ur5e_multiseed --menagerie "$CAUSALFORGE_MENAGERIE" --seeds 42 43 44 45 46 --episodes 30 --out runs/dual-ur5e-multiseed.json
+      - name: Train and evaluate dual-UR5e scripted plan student
+        env:
+          CAUSALFORGE_MENAGERIE: ${{ github.workspace }}/third_party/mujoco_menagerie
+        run: |
+          python -m unittest discover -s tests -p 'test_dual_ur5e_student.py' -v
+          python -m vla_council.causalforge.dual_ur5e_student --menagerie "$CAUSALFORGE_MENAGERIE" --seed 71 --train 36 --test 18 --duration 1.0 --out runs/dual-ur5e-student.json
       - name: Render actual MuJoCo UR5e frames (OSMesa)
         env:
           CAUSALFORGE_MENAGERIE: ${{ github.workspace }}/third_party/mujoco_menagerie
@@ -63,6 +69,7 @@ jobs:
           path: |
             runs/dual-ur5e.json
             runs/dual-ur5e-multiseed.json
+            runs/dual-ur5e-student.json
             runs/dual-ur5e-render.json
             runs/dual-ur5e.gif
             menagerie-revision.txt
