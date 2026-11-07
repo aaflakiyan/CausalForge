@@ -26,3 +26,15 @@ jobs:
         env:
           CAUSALFORGE_MENAGERIE: ${{ github.workspace }}/third_party/mujoco_menagerie
         run: python -m unittest discover -s tests -p 'test_vla_bridge.py' -v
+      - name: Three-provider compatibility smoke test on UR5e
+        env:
+          CAUSALFORGE_MENAGERIE: ${{ github.workspace }}/third_party/mujoco_menagerie
+        run: |
+          python -m unittest discover -s tests -p 'test_vla_bridge_demo.py' -v
+          causalforge demo-vlas --menagerie "$CAUSALFORGE_MENAGERIE" --out runs/vla-bridge-demo
+          python -c 'import json; d=json.load(open("runs/vla-bridge-demo/metrics.json")); assert len(d["teachers"])==3 and not d["rejected"]; assert all(x["task_success"] for x in d["teachers"].values())'
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: multi-vla-interface-validation
+          path: runs/vla-bridge-demo/
