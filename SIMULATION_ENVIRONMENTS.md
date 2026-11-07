@@ -40,3 +40,14 @@ python -m vla_council.causalforge.physical_distillation --backend mujoco --train
 ```
 
 The `mujoco` GitHub Actions job executes these tests on CPU and retains JSON outputs as artifacts. Comparison between two simulated physical hypotheses does not constitute sim-to-real validation, and known noise/model assumptions can make active information-gain probing appear artificially effective.
+## 4. Tabletop pushing with gravity and friction (experimental)
+
+[assets/mujoco/tabletop_push.xml](assets/mujoco/tabletop_push.xml) is a **second** MJCF model with a gravity-loaded free-body payload on a plane and an actuated sliding pusher. It is closer to ordinary contact manipulation than the first zero-gravity model, but still has only one actuated degree of freedom. It is not a humanoid or Panda manipulation benchmark.
+
+```bash
+python -m vla_council.causalforge.tabletop_push --friction 0.2 --out runs/tabletop/low
+python -m vla_council.causalforge.tabletop_push --friction 1.2 --out runs/tabletop/high
+```
+
+The commands export a `trajectory.csv` and `summary.json` per condition. GitHub's **MuJoCo tabletop physics** workflow runs the physics integration tests and uploads both conditions as artifacts. The high/low friction results are a *sanity comparison*, not trained-policy evaluation.
+
