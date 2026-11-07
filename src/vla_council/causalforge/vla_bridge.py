@@ -38,6 +38,7 @@ class ExplicitActionMapping:
     source: ActionSpec
     target: ActionSpec = SPEC
     degrees_to_radians: bool = False
+    resample_from_current: bool = False
 
     def __post_init__(self):
         if self.source.robot != self.target.robot:
@@ -47,7 +48,12 @@ class ExplicitActionMapping:
         if self.source.frame != "joint" or self.target.frame != "joint":
             raise ValueError("Only joint-frame commands supported")
         if not np.isclose(self.source.dt, self.target.dt, atol=1e-12, rtol=0):
-            raise ValueError("Action periods differ; resampling must be implemented and tested separately")
+            ratio = self.source.dt / self.target.dt
+            if (not self.resample_from_current or ratio < 1 or
+                    not np.isclose(ratio, round(ratio), atol=1e-10, rtol=0)):
+                raise ValueError("Different action periods require explicit, integer-ratio interpolation from measured current joints")
+            if ratio > 50:
+                raise ValueError("Interpolation ratio exceeds conservative 50x bound")
         if len(self.source.ordered_axes) != len(self.target.ordered_axes):
             raise ValueError("Every target joint must be supplied; no silent padding")
         if set(self.source.ordered_axes) != set(self.target.ordered_axes):
@@ -59,7 +65,7 @@ class ExplicitActionMapping:
         if "deg" in self.source.units and not self.degrees_to_radians:
             raise ValueError("Degree-to-radian conversion requires explicit opt-in")
 
-    def convert(self, action: Any, model_name: str) -> ActionChunk:
+    def convert(self, action: Any, model_name: str, current_joints: Any = None) -> ActionChunk:
         data = _numpy(action)
         if data.ndim != 2 or data.shape[0] < 1 or data.shape[1] != len(self.source.ordered_axes):
             raise ValueError("Expected source action chunk [T, source_joint_count]")
@@ -70,6 +76,22 @@ class ExplicitActionMapping:
         for col, idx in enumerate(indices):
             if self.source.units[idx] == "deg":
                 transformed[:, col] = np.deg2rad(transformed[:, col])
+        if not np.isclose(self.source.dt, self.target.dt, atol=1e-12, rtol=0):
+            if current_joints is None:
+                raise ValueError("Resampling requires a measured starting joint configuration")
+            start = _numpy(current_joints).reshape(-1)
+            if start.shape != (len(self.target.ordered_axes),) or not np.isfinite(start).all():
+                raise ValueError("Starting joint configuration is missing, invalid or wrong dimension")
+            factor = int(round(self.source.dt/self.target.dt))
+            previous = np.vstack([start.reshape(1,-1), transformed[:-1]])
+            increments = np.linspace(1./factor, 1., factor)
+            # Each source setpoint occurs at t=(i+1)*source.dt; construct the
+            # intervening target ticks from the measured current state.
+            transformed = np.concatenate([
+                previous[i][None,:] + increments[:,None] *
+                (transformed[i] - previous[i])[None,:]
+                for i in range(len(transformed))
+            ], axis=0)
         return ActionChunk(transformed, self.target, model_name)
 
 
@@ -145,7 +167,8 @@ class VLABackend:
                 pass
         else:
             chunk = _numpy(self.client(batch))
-        return self.mapping.convert(chunk, self.name)
+        home = observation.get("joint_positions_rad") if isinstance(observation, dict) else None
+        return self.mapping.convert(chunk, self.name, current_joints=home)
 
 
 @dataclass(frozen=True)
