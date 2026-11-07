@@ -113,7 +113,7 @@ def contacts(model, data):
             table += 1
     return inter, table
 
-def execute(model, goals=GOALS, duration=3., render=False, right_command_scale=1.0, right_compensation=1.0):
+def execute(model, goals=GOALS, duration=3., render=False, right_command_scale=1.0, right_compensation=1.0, record_trace=False):
     import mujoco
     q, actuator, site = ids(model)
     ik = [solve_ik(model, s, goals[s]) for s in (0, 1)]
@@ -124,6 +124,7 @@ def execute(model, goals=GOALS, duration=3., render=False, right_command_scale=1
     if n <= 0:
         raise ValueError("Invalid duration")
     frames = []
+    trace = []
     renderer = mujoco.Renderer(model, height=540, width=960) if render else None
     inter_contact_frames, table_contact_frames = 0, 0
     max_joint_error = 0.
@@ -142,6 +143,16 @@ def execute(model, goals=GOALS, duration=3., render=False, right_command_scale=1
         inter_contact_frames += bool(inter)
         table_contact_frames += bool(tabletop)
         max_joint_error = max(max_joint_error, float(np.max(np.abs(data.qpos[q]-data.ctrl[actuator]))))
+        if record_trace and (i % max(1,n//100) == 0 or i == n-1):
+            trace.append({
+                "time_s":float(data.time),
+                "joint_positions_rad":data.qpos[q].tolist(),
+                "joint_commands_rad":data.ctrl[actuator].tolist(),
+                "tool_xyz_m":data.site_xpos[site].tolist(),
+                "goal_errors_m":np.linalg.norm(data.site_xpos[site]-goals,axis=1).tolist(),
+                "inter_arm_contacts":int(inter),
+                "table_contacts":int(tabletop),
+            })
         if renderer is not None and (i % max(1, n//50) == 0 or i == n-1):
             renderer.update_scene(data, camera="overview")
             frames.append(renderer.render().copy())
@@ -150,7 +161,7 @@ def execute(model, goals=GOALS, duration=3., render=False, right_command_scale=1
     final_sites = data.site_xpos[site].copy()
     initial_errors = np.linalg.norm(home_sites-goals,axis=1)
     final_errors = np.linalg.norm(final_sites-goals,axis=1)
-    return {
+    result = {
         "task":"two independent Cartesian reaches above a shared workbench",
         "real_pretrained_vla":False,
         "goal_xyz_m":goals.tolist(),
@@ -167,7 +178,10 @@ def execute(model, goals=GOALS, duration=3., render=False, right_command_scale=1
         "duration_s":duration,
         "right_command_scale":float(right_command_scale),
         "right_compensation":float(right_compensation),
-    }, frames
+    }
+    if record_trace:
+        result["trajectory"] = trace
+    return result, frames
 
 def main():
     p=argparse.ArgumentParser(description=__doc__)
@@ -175,9 +189,10 @@ def main():
     p.add_argument("--out",type=Path,default=Path("runs/dual-ur5e-reach.json"))
     p.add_argument("--render",type=Path)
     p.add_argument("--duration",type=float,default=3.)
+    p.add_argument("--trace",action="store_true",help="Include measured 12-joint and tool trajectory in JSON")
     args=p.parse_args()
     model=load_reach_model(args.menagerie)
-    report,frames=execute(model,duration=args.duration,render=args.render is not None)
+    report,frames=execute(model,duration=args.duration,render=args.render is not None,record_trace=args.trace)
     args.out.parent.mkdir(parents=True,exist_ok=True)
     args.out.write_text(json.dumps(report,indent=2)+"\n",encoding="utf-8")
     print(json.dumps(report,indent=2))
