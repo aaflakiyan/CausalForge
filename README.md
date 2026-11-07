@@ -22,6 +22,21 @@ Results are saved to `runs/quickstart/metrics.json` and a standalone `runs/quick
 
 This currently supports **only** dual UR5e Cartesian reaching with a built-in IK baseline, not real VLA inference or physical-hardware deployment.
 
+## Connect multiple VLA inference backends
+
+**Supported adapter interfaces:** OpenPI `infer()`, NVIDIA GR00T `get_action()`, and LeRobot `predict_action_chunk()` / `select_action()`. CausalForge takes a loaded policy or remote client supplied by the user; it does not bundle model weights.
+
+Test all three provider protocols on real MuJoCo physics, **without a GPU or pretrained models**:
+
+```bash
+python -m pip install -e '.[mujoco]'
+causalforge demo-vlas
+```
+
+The command runs three clearly labelled **mock provider interfaces**, converts and validates their action chunks, and evaluates each against the same official dual-UR5e reaching simulation. It saves `runs/vla-bridge-demo/metrics.json`. This is a protocol/robot-control test, not evidence that a pretrained OpenPI, GR00T or LeRobot policy has learned the UR5e task.
+
+To connect your own loaded checkpoint, see [Multi-VLA integration, action mappings and limitations](MULTI_VLA_INTEGRATION.md). Every source must explicitly declare matching robot joints, units, frame, control mode and timestep. Missing joints, unknown representations and incompatible embodiment outputs are refused.
+
 ## At a glance
 
 Can disagreements between robot policies become **targeted physical experiments** that generate better training examples for a smaller student policy?
