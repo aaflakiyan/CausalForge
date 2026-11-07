@@ -1,12 +1,15 @@
 ---
 name: Bug report
-about: Report a reproducible issue
+description: Reproducible correctness or physical validity problem
+labels: [bug]
 ---
 
-**How to reproduce**
+**Environment (OS / Python / MuJoCo versions)**
 
-**Expected behaviour**
+**Expected vs observed behaviour**
 
-**Actual behaviour and logs**
+**Exact reproduction command / minimal example**
 
-**Python/MuJoCo version and OS**
+**Physics assumptions and seed**
+
+**Traceback / log (remove tokens and personal data)**

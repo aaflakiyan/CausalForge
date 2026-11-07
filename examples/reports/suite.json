@@ -1,0 +1,61 @@
+{
+  "benchmark": "synthetic_surrogate",
+  "is_real_vla": false,
+  "note": "No paired compute-cost matching and no generalisation beyond two predefined hypotheses.",
+  "seeds": 8,
+  "train_per_seed": 400,
+  "test_per_seed": 160,
+  "summary": {
+    "none": {
+      "mean_task_loss": 0.039598713215010184,
+      "std_task_loss_across_seeds": 0.0035365232691525906,
+      "mean_probe_cost": 0.0
+    },
+    "fixed": {
+      "mean_task_loss": 0.03964166826015198,
+      "std_task_loss_across_seeds": 0.003462210139811294,
+      "mean_probe_cost": 0.07999999999999999
+    },
+    "random": {
+      "mean_task_loss": 0.03864187749695897,
+      "std_task_loss_across_seeds": 0.003564019613954811,
+      "mean_probe_cost": 0.2100625
+    },
+    "active": {
+      "mean_task_loss": 0.03795057105258803,
+      "std_task_loss_across_seeds": 0.0034193012136744883,
+      "mean_probe_cost": 0.35000000000000003
+    },
+    "oracle": {
+      "mean_task_loss": 0.03795057105258803,
+      "std_task_loss_across_seeds": 0.0034193012136744883,
+      "mean_probe_cost": 0.0
+    }
+  },
+  "paired_comparisons": {
+    "active_minus_none": {
+      "mean_difference": -0.0016481421624221625,
+      "seed_percentiles_2_5_97_5": [
+        -0.0019382914225025123,
+        -0.0011807785864064648
+      ],
+      "active_better_in_n_seeds": 8
+    },
+    "active_minus_fixed": {
+      "mean_difference": -0.0016910972075639512,
+      "seed_percentiles_2_5_97_5": [
+        -0.002044370826131618,
+        -0.0013440230577636573
+      ],
+      "active_better_in_n_seeds": 8
+    },
+    "active_minus_random": {
+      "mean_difference": -0.000691306444370942,
+      "seed_percentiles_2_5_97_5": [
+        -0.0012447332891947127,
+        -0.0002550750910331033
+      ],
+      "active_better_in_n_seeds": 8
+    }
+  }
+}

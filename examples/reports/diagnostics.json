@@ -1,0 +1,94 @@
+{
+  "backend": "surrogate",
+  "seed": 42,
+  "trials": 100,
+  "noise_std": 0.015,
+  "confidence": 0.9,
+  "budget_per_trial": 0.35,
+  "methods": {
+    "active": {
+      "diagnostic_accuracy_all_trials": 1.0,
+      "coverage": 1.0,
+      "accuracy_when_decided": 1.0,
+      "mean_probe_cost": 0.35,
+      "mean_brier_score": 0.0,
+      "mean_control_goal_error": 0.007779,
+      "oracle_goal_error": 0.007779,
+      "selected_teacher_counts": {
+        "cautious": 0,
+        "nominal": 48,
+        "strong": 52
+      },
+      "probe_counts": {
+        "free_short": 0,
+        "free_long": 0,
+        "contact_short": 0,
+        "contact_long": 100,
+        "none": 0
+      }
+    },
+    "random": {
+      "diagnostic_accuracy_all_trials": 0.56,
+      "coverage": 0.56,
+      "accuracy_when_decided": 1.0,
+      "mean_probe_cost": 0.1957,
+      "mean_brier_score": 0.2246,
+      "mean_control_goal_error": 0.010811,
+      "oracle_goal_error": 0.007779,
+      "selected_teacher_counts": {
+        "cautious": 0,
+        "nominal": 48,
+        "strong": 52
+      },
+      "probe_counts": {
+        "free_short": 29,
+        "free_long": 27,
+        "contact_short": 22,
+        "contact_long": 22,
+        "none": 0
+      }
+    },
+    "fixed": {
+      "diagnostic_accuracy_all_trials": 0.0,
+      "coverage": 0.0,
+      "accuracy_when_decided": null,
+      "mean_probe_cost": 0.08,
+      "mean_brier_score": 0.4952,
+      "mean_control_goal_error": 0.015499,
+      "oracle_goal_error": 0.007779,
+      "selected_teacher_counts": {
+        "cautious": 0,
+        "nominal": 46,
+        "strong": 54
+      },
+      "probe_counts": {
+        "free_short": 100,
+        "free_long": 0,
+        "contact_short": 0,
+        "contact_long": 0,
+        "none": 0
+      }
+    },
+    "none": {
+      "diagnostic_accuracy_all_trials": 0.0,
+      "coverage": 0.0,
+      "accuracy_when_decided": null,
+      "mean_probe_cost": 0.0,
+      "mean_brier_score": 0.5,
+      "mean_control_goal_error": 0.015219,
+      "oracle_goal_error": 0.007779,
+      "selected_teacher_counts": {
+        "cautious": 0,
+        "nominal": 0,
+        "strong": 100
+      },
+      "probe_counts": {
+        "free_short": 0,
+        "free_long": 0,
+        "contact_short": 0,
+        "contact_long": 0,
+        "none": 100
+      }
+    }
+  }
+}

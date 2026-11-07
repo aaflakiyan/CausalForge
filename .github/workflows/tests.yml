@@ -1,0 +1,39 @@
+name: Tests
+on:
+  push:
+  pull_request:
+jobs:
+  core:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ['3.10', '3.11', '3.12']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - run: python -m pip install -e .
+      - run: python -m unittest discover -s tests -v
+      - run: python -m vla_council.causalforge.benchmark --backend surrogate --trials 20 --out runs/check.json
+      - run: python -m vla_council.causalforge.closed_loop --train 40 --test 30 --out runs/closed-loop-ci.json
+      - run: python -m vla_council.causalforge.suite --seeds 2 --train 30 --test 20 --out runs/suite-ci.json
+      - run: python -m vla_council.causalforge.ood_benchmark --backend surrogate --episodes 10 --out runs/ood-surrogate-ci.json
+  mujoco:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m pip install -e '.[mujoco]'
+      - run: python -m unittest discover -s tests -v
+      - run: python -m vla_council.causalforge.demo --true both --out runs/diagnostic.json
+      - run: python -m vla_council.causalforge.benchmark --backend mujoco --trials 4 --out runs/benchmark-mujoco.json
+      - run: python -m vla_council.causalforge.ood_benchmark --backend mujoco --episodes 3 --out runs/ood-mujoco-ci.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mujoco-results
+          path: runs/*.json
+          if-no-files-found: warn

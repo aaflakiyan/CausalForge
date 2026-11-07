@@ -17,3 +17,4 @@ where = ["src"]
 
 [project.optional-dependencies]
 mujoco = ["mujoco>=3.5,<4"]
+

@@ -1,0 +1,168 @@
+{
+  "experiment": "closed_hypothesis_diagnosis_with_unseen_physics",
+  "real_vla": false,
+  "backend": "surrogate",
+  "config": {
+    "backend": "surrogate",
+    "episodes_per_condition": 50,
+    "seed": 2026,
+    "observation_noise": 0.015,
+    "model_noise": 0.015,
+    "novelty_threshold": 3.5,
+    "mc_samples": 32
+  },
+  "hypotheses": {
+    "weak_motor": {
+      "motor_scale": 0.42,
+      "payload_mass": 0.5
+    },
+    "heavy_payload": {
+      "motor_scale": 1.0,
+      "payload_mass": 3.0
+    }
+  },
+  "unseen_conditions": {
+    "intermediate_dynamics": {
+      "motor_scale": 0.72,
+      "payload_mass": 1.75
+    },
+    "weak_and_heavy": {
+      "motor_scale": 0.42,
+      "payload_mass": 3.0
+    }
+  },
+  "methods": {
+    "none": {
+      "known_classification_accuracy_unconditional": 0.5,
+      "known_reject_rate": 0.0,
+      "unknown_reject_rate": 0.0,
+      "mean_task_loss": 0.016021711012564676,
+      "mean_oracle_task_loss": 0.012146711012564681,
+      "mean_probe_seconds": 0.0,
+      "mean_probe_force": 0.0,
+      "probe_coverage": 0.0,
+      "probes": {
+        "gentle": 0,
+        "moderate": 0,
+        "firm": 0
+      },
+      "per_condition": {
+        "weak_motor": {
+          "reject_rate": 0.0,
+          "mean_task_loss": 0.023499999999999983
+        },
+        "heavy_payload": {
+          "reject_rate": 0.0,
+          "mean_task_loss": 0.007575757575757589
+        },
+        "intermediate_dynamics": {
+          "reject_rate": 0.0,
+          "mean_task_loss": 0.0008292682926829276
+        },
+        "weak_and_heavy": {
+          "reject_rate": 0.0,
+          "mean_task_loss": 0.032181818181818186
+        }
+      }
+    },
+    "fixed": {
+      "known_classification_accuracy_unconditional": 0.97,
+      "known_reject_rate": 0.0,
+      "unknown_reject_rate": 0.0,
+      "mean_task_loss": 0.01707022542498153,
+      "mean_oracle_task_loss": 0.012146711012564681,
+      "mean_probe_seconds": 0.31999999999999995,
+      "mean_probe_force": 2.0,
+      "probe_coverage": 1.0,
+      "probes": {
+        "gentle": 200,
+        "moderate": 0,
+        "firm": 0
+      },
+      "per_condition": {
+        "weak_motor": {
+          "reject_rate": 0.0,
+          "mean_task_loss": 0.008620000000000011
+        },
+        "heavy_payload": {
+          "reject_rate": 0.0,
+          "mean_task_loss": 0.007939393939393953
+        },
+        "intermediate_dynamics": {
+          "reject_rate": 0.0,
+          "mean_task_loss": 0.01220878048780488
+        },
+        "weak_and_heavy": {
+          "reject_rate": 0.0,
+          "mean_task_loss": 0.03951272727272727
+        }
+      }
+    },
+    "random": {
+      "known_classification_accuracy_unconditional": 0.99,
+      "known_reject_rate": 0.0,
+      "unknown_reject_rate": 0.01,
+      "mean_task_loss": 0.017080485957132307,
+      "mean_oracle_task_loss": 0.012146711012564681,
+      "mean_probe_seconds": 0.31999999999999995,
+      "mean_probe_force": 3.56,
+      "probe_coverage": 1.0,
+      "probes": {
+        "gentle": 59,
+        "moderate": 74,
+        "firm": 67
+      },
+      "per_condition": {
+        "weak_motor": {
+          "reject_rate": 0.0,
+          "mean_task_loss": 0.008310000000000014
+        },
+        "heavy_payload": {
+          "reject_rate": 0.0,
+          "mean_task_loss": 0.007575757575757589
+        },
+        "intermediate_dynamics": {
+          "reject_rate": 0.02,
+          "mean_task_loss": 0.012770731707317075
+        },
+        "weak_and_heavy": {
+          "reject_rate": 0.0,
+          "mean_task_loss": 0.03966545454545454
+        }
+      }
+    },
+    "active": {
+      "known_classification_accuracy_unconditional": 1.0,
+      "known_reject_rate": 0.0,
+      "unknown_reject_rate": 0.02,
+      "mean_task_loss": 0.017181655580192176,
+      "mean_oracle_task_loss": 0.012146711012564681,
+      "mean_probe_seconds": 0.31999999999999995,
+      "mean_probe_force": 5.0,
+      "probe_coverage": 1.0,
+      "probes": {
+        "gentle": 0,
+        "moderate": 0,
+        "firm": 200
+      },
+      "per_condition": {
+        "weak_motor": {
+          "reject_rate": 0.0,
+          "mean_task_loss": 0.008000000000000014
+        },
+        "heavy_payload": {
+          "reject_rate": 0.0,
+          "mean_task_loss": 0.007575757575757589
+        },
+        "intermediate_dynamics": {
+          "reject_rate": 0.04,
+          "mean_task_loss": 0.013332682926829272
+        },
+        "weak_and_heavy": {
+          "reject_rate": 0.0,
+          "mean_task_loss": 0.039818181818181815
+        }
+      }
+    }
+  }
+}
