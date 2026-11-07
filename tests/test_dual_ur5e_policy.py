@@ -68,6 +68,20 @@ class PolicyMuJoCoTests(unittest.TestCase):
         commands[0,0]=999.0
         with self.assertRaises(ValueError):
             _validate(self.chunk(actions=commands),self.model,self.home)
+    def test_invalid_proposal_cannot_step_physics(self):
+        from unittest.mock import patch
+        from dataclasses import replace
+        from vla_council.causalforge.dual_ur5e_policy import evaluate
+        import mujoco
+        class BadPolicy:
+            def predict(self, observation):
+                return ActionChunk(
+                    np.tile(observation["joint_positions_rad"].ravel(),(3,1)),
+                    replace(SPEC,units=("degree",)*12),
+                    "bad")
+        with patch.object(mujoco, "mj_step", side_effect=AssertionError("Physics stepped")):
+            with self.assertRaises(ValueError):
+                evaluate(BadPolicy(), menagerie=self.menagerie)
     def test_reaching_runs_and_success(self):
         from vla_council.causalforge.dual_ur5e_policy import evaluate,BuiltinReachPolicy
         result=evaluate(BuiltinReachPolicy(self.model),menagerie=self.menagerie,record_trace=True)
