@@ -10,6 +10,7 @@ from __future__ import annotations
 import argparse
 import json
 import subprocess
+from html import escape
 from pathlib import Path
 
 MENAGERIE_REVISION = "98a70c569c4c1b6da467a20012f766ee1f8dc521"
@@ -58,6 +59,48 @@ def locate_menagerie(path: Path | None = None, cache: Path | None = None) -> Pat
     return root
 
 
+def html_report(report: dict) -> str:
+    """Self-contained human-readable report from actual MuJoCo metrics."""
+    errors = report["tool_error_m"]
+    motion = report["tool_displacement_m"]
+    passed = bool(report["task_success"])
+    status = "PASS" if passed else "FAIL"
+    cells = "".join(
+        f"<tr><td>{escape(name)}</td><td>{value:.2f}</td></tr>"
+        for name, value in (
+            ("Left tool error (mm)", 1000 * errors[0]),
+            ("Right tool error (mm)", 1000 * errors[1]),
+            ("Left tool displacement (mm)", 1000 * motion[0]),
+            ("Right tool displacement (mm)", 1000 * motion[1]),
+            ("Arm–arm contact steps", report["inter_arm_contact_steps"]),
+            ("Arm–table contact steps", report["table_contact_steps"]),
+            ("Validated action samples", report["actions_checked_before_execution"]),
+            ("Physics substeps per sample", report["physics_substeps_per_action"]),
+        )
+    )
+    return (
+        "<!DOCTYPE html><html lang='en'><head><meta charset='utf-8'>"
+        "<meta name='viewport' content='width=device-width, initial-scale=1'>"
+        "<title>CausalForge | Verified dual UR5e run</title>"
+        "<style>body{font-family:system-ui,sans-serif;max-width:850px;margin:5vh auto;"
+        "padding:0 22px;background:#101827;color:#f2f6fc}h1{margin-bottom:4px}"
+        ".muted{color:#a7b4c6}.card{background:#1b283a;border:1px solid #35445a;"
+        "border-radius:12px;padding:22px;margin:24px 0}table{border-collapse:collapse;"
+        "width:100%}td{padding:12px 8px;border-bottom:1px solid #35445a}"
+        "td:last-child{text-align:right;font-variant-numeric:tabular-nums}"
+        ".status{font-weight:700;color:" + ("#75da99" if passed else "#ff8c8c") + "}"
+        "</style></head><body><h1>CausalForge</h1>"
+        "<p class='muted'>Actual MuJoCo simulation • official dual UR5e • absolute joint control</p>"
+        f"<div class='card'><h2>Reach validation: <span class='status'>{status}</span></h2>"
+        "<p>This result validates the simulated joint-policy command boundary only, "
+        "not real-hardware safety or pretrained VLA inference.</p></div>"
+        "<div class='card'><h2>Measured physical results</h2><table>"
+        + cells + "</table></div>"
+        "<p class='muted'>Raw evidence: metrics.json • full policy metadata and optional trace</p>"
+        "</body></html>\n"
+    )
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="causalforge",
                                      description="Verified Physical AI simulation runner")
@@ -76,12 +119,14 @@ def main(argv: list[str] | None = None) -> int:
         report = evaluate(BuiltinReachPolicy(model),menagerie=root,record_trace=args.trace)
         args.out.mkdir(parents=True,exist_ok=True)
         (args.out/"metrics.json").write_text(json.dumps(report,indent=2)+"\n",encoding="utf-8")
+        (args.out/"report.html").write_text(html_report(report),encoding="utf-8")
         print("CausalForge dual-UR5e / reach")
         print(f"  12 joints validated | {report['actions_checked_before_execution']} command samples")
         print(f"  Tool errors: {[round(x*1000,2) for x in report['tool_error_m']]} mm")
         print(f"  Contacts: arm={report['inter_arm_contact_steps']}, table={report['table_contact_steps']}")
         print(f"  Result: {'PASS' if report['task_success'] else 'FAIL'}")
         print(f"  Evidence: {args.out/'metrics.json'}")
+        print(f"  Report: {args.out/'report.html'}")
         return 0 if report["task_success"] else 1
     return 2
 
