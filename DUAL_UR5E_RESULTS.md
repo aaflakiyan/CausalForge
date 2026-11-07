@@ -1,5 +1,8 @@
 # Verified two-UR5e MuJoCo results — 7 November 2026
 
+> **Historical benchmark — do not use as evidence of validated active-learning superiority.** The original demonstration used small joint-offset motions with tool sites roughly 1.92 m apart and a known right-side setpoint fault. It did not test shared-workspace manipulation, contact avoidance or pretrained VLA learning. See the independently verified [corrected Cartesian-reaching audit](DUAL_UR5E_AUDIT.md), where active probing is shown to **tie** with a fixed right-arm probe.
+
+
 ## Experiment
 
 - Robots: two official Google DeepMind MuJoCo Menagerie **Universal Robots UR5e** models, facing each other across a central table.
