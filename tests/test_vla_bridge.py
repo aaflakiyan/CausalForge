@@ -99,6 +99,25 @@ class BridgeUnitTests(unittest.TestCase):
 
 @unittest.skipUnless(os.environ.get("CAUSALFORGE_MENAGERIE"),"MuJoCo Menagerie required")
 class BridgePhysicsTests(unittest.TestCase):
+    def test_resampled_gr00t_mock_reaches_in_real_mujoco(self):
+        from vla_council.causalforge.dual_ur5e_reach import load_reach_model, reset, GOALS
+        from vla_council.causalforge.dual_ur5e import ids
+        from vla_council.causalforge.dual_ur5e_policy import evaluate
+        root=Path(os.environ["CAUSALFORGE_MENAGERIE"])
+        model=load_reach_model(root)
+        q=reset(model).qpos[ids(model)[0]].copy()
+        full=BuiltinReachPolicy(model).predict({
+            "joint_positions_rad":q,"goal_xyz_m":GOALS,
+        }).actions
+        sampled=full[4::5]
+        source=replace(SPEC,dt=.1)
+        adapter=VLABackend("10hz_gr00t_mock","groot",GR00TMock(sampled),
+                           ExplicitActionMapping(source,resample_from_current=True),
+                           lambda obs:obs, action_key="arm_action")
+        result=evaluate(adapter,menagerie=root)
+        self.assertEqual(result["actions_checked_before_execution"],150)
+        self.assertTrue(result["task_success"],result)
+        self.assertTrue(all(e<.07 for e in result["tool_error_m"]))
     def test_two_vendor_interfaces_run_on_same_robot(self):
         from vla_council.causalforge.dual_ur5e_reach import load_reach_model, reset,GOALS
         from vla_council.causalforge.dual_ur5e import ids
