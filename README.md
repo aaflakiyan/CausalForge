@@ -15,28 +15,34 @@ Can disagreements between robot policies become **targeted physical experiments*
 
 Rather than simply averaging action predictions, CausalForge tests candidate explanations, selects bounded diagnostic probes, evaluates feasible actions, and distils resulting decisions. It is intended as a reproducible testbed for this research question — not a claim that multi-teacher learning already outperforms established baselines.
 
-## Two facing Universal Robots UR5e — real MuJoCo simulation
+## Two UR5e arms — corrected Cartesian reaching experiment
 
-![Two official MuJoCo Menagerie UR5e robot arms facing each other across a shared table](docs/media/dual-ur5e-actual.gif)
+![Two MuJoCo Menagerie UR5e arms performing actual Cartesian reaching towards separate targets](docs/media/dual-ur5e-cartesian-reach.gif)
 
-*Actual MuJoCo camera frames, rendered headlessly with OSMesa in GitHub Actions. Both models retain six articulated joints. The GIF shows a scripted coordinated-reach motion, not pretrained VLA inference.*
+*Actual MuJoCo camera render from the CI-tested task. Both six-joint UR5e arms move into a shared workspace towards independently specified 3D targets. This is a reaching demonstration, **not grasping, handover or pretrained VLA control**.*
 
-### Held-out student distillation
+The earlier dual-arm GIF was misleading: the tools started nearly **1.92 m apart** and performed small, preprogrammed joint-offset motions with no meaningful shared-workspace task. The corrected experiment solves independent world-coordinate targets using damped least-squares inverse kinematics, then runs the commands under MuJoCo dynamics.
 
-We now train a compact **discrete teacher-plan student** using the council's selections, with separate train/test scenarios and an unseen actuator-tracking factor. In the first held-out MuJoCo test (18 scenarios), the active-probe student averaged **15.79 mm** tool-position error, compared with **24.70 mm** for the no-probe student. Both matched their respective scripted councils on that small split.
+| Verified physical measure | Result |
+| --- | ---: |
+| Target distance at start, per tool | 0.953 m |
+| Actual movement, per tool | **0.938 m** |
+| Final tool-target error, per tool | **21.4 mm** |
+| Arm–arm / arm–table contact frames | **0 / 0** |
 
-[Read the student validation and its limitations](DUAL_UR5E_STUDENT_RESULTS.md). This is **not** a pretrained VLA model or a learned full robot controller.
+A second experiment uses the corrected task to compare scripted controller selection under a right-arm **joint-setpoint attenuation** (not a genuine motor-torque failure):
 
-The new [dual-UR5e benchmark](DUAL_UR5E_BENCHMARK.md) and its [five-seed validated results](DUAL_UR5E_RESULTS.md) uses real [MuJoCo Menagerie UR5e models](https://github.com/google-deepmind/mujoco_menagerie/tree/main/universal_robots_ur5e) facing one another across a shared workspace. It tests five scripted candidate motion policies, right-arm actuation disturbances, fault-diagnosis probes and a physics-backed teacher-selection council.
-
-| Method (30 paired scenarios, one seed) | Mean end-effector error | Probe cost |
+| Method (18 paired cases) | Mean position error | Task success |
 | --- | ---: | ---: |
-| No diagnostic probe | 22.30 mm | 0 s |
-| Fixed left-arm probe | 22.30 mm | 0.22 s |
-| Random left/right probe | 17.92 mm | 0.22 s |
-| **Disagreement-driven active probe** | **14.21 mm** | 0.22 s |
+| No probe | 144.1 mm | 33% |
+| Fixed left probe | 144.1 mm | 33% |
+| Random arm probe | 128.3 mm | 39% |
+| **Fixed right probe** | **59.1 mm** | **67%** |
+| **Active probe** | **59.1 mm** | **67%** |
 
-The active probe improves mean error in this **scripted-model benchmark**. There were zero inter-arm contacts in these trials; that does *not* establish robust collision avoidance. All model predictions use the same UR model as evaluation, except for a withheld right-arm tracking disturbance. **These results are not evidence of improved pretrained VLA or sim-to-real performance.** The [reproducible GitHub workflow](.github/workflows/dual-ur5e.yml) downloads the genuine licensed meshes, runs validation and stores the trajectories, performance report and renderer output.
+**Important negative result:** active probing **does not beat a fixed right-arm probe**. Because all faults are on the right, this test does not prove intelligent experiment selection. The unseen-fault results remain poor, and none of these experiments use pretrained VLAs. The former comparison remains as a legacy scripted-control test, not the primary research validation.
+
+[Read the full audit, exact acceptance tests, limitations and reproduction commands](DUAL_UR5E_AUDIT.md).
 
 ## Watch the simulation
 
