@@ -1,0 +1,36 @@
+name: Dual UR5e MuJoCo benchmark
+on:
+  push:
+    branches: [main, "feature/dual-ur5e-benchmark"]
+  pull_request:
+  workflow_dispatch:
+jobs:
+  dual-ur5e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: python -m pip install -e '.[mujoco]'
+      - name: Obtain official MuJoCo Menagerie UR5e assets
+        run: |
+          git clone --depth 1 --filter=blob:none --sparse https://github.com/google-deepmind/mujoco_menagerie.git third_party/mujoco_menagerie
+          git -C third_party/mujoco_menagerie sparse-checkout set universal_robots_ur5e
+          git -C third_party/mujoco_menagerie rev-parse HEAD > menagerie-revision.txt
+          test -f third_party/mujoco_menagerie/universal_robots_ur5e/ur5e.xml
+      - name: Validate opposing UR5e models and council benchmark
+        env:
+          CAUSALFORGE_MENAGERIE: ${{ github.workspace }}/third_party/mujoco_menagerie
+        run: |
+          python -m unittest discover -s tests -p 'test_dual_ur5e.py' -v
+          python -m vla_council.causalforge.dual_ur5e --menagerie "$CAUSALFORGE_MENAGERIE" --episodes 6 --duration 1.5 --out runs/dual-ur5e.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: dual-ur5e-results
+          path: |
+            runs/dual-ur5e.json
+            menagerie-revision.txt
+          if-no-files-found: warn
