@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "vla-council"
+version = "0.5.0"
+description = "Reproducible research toolkit for physically testable multi-teacher policy distillation"
+requires-python = ">=3.10"
+dependencies = ["numpy>=1.24"]
+
+[project.scripts]
+vla-council = "vla_council.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[project.optional-dependencies]
+mujoco = ["mujoco>=3.5,<4"]
