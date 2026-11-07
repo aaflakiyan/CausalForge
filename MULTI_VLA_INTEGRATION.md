@@ -66,6 +66,24 @@ mapping = ExplicitActionMapping(source, degrees_to_radians=True)
 
 This performs a verified permutation and degree-to-radian conversion, *not* a learned or heuristic interpretation of VLA outputs.
 
+## Explicit action-frequency conversion
+
+Many VLA policies run at a different frequency from the 50 Hz UR5e command interface. There is now a **strict opt-in** linear interpolation for absolute joint targets at a slower period that is an exact integer multiple of the 20 ms controller tick.
+
+```python
+from dataclasses import replace
+from vla_council.causalforge.vla_bridge import ExplicitActionMapping
+
+source = replace(causalforge.SPEC, dt=0.10)  # source emits 10 Hz
+mapping = ExplicitActionMapping(source, resample_from_current=True)
+```
+
+To generate 50 Hz commands, the adapter interpolates each original 10 Hz setpoint from the *measured current joint configuration* or previous setpoint. It never silently repeats, truncates or extrapolates a model action. A 10-step source chunk yields 50 controller ticks over exactly one second.
+
+Unsupported timing ratios, missing current state and unauthorised conversion fail before execution. The resulting commands must still pass the MuJoCo policy validator's joint, actuator and **2 rad/s command-rate** limits.
+
+**This is command interpolation, not proof that a lower-frequency VLA has appropriate closed-loop dynamics, latency or physical safety.** It does not support resampling Cartesian increments, torque or velocity controls. It should be evaluated on each robot/task separately.
+
 ## Combining two single-arm teachers
 
 A GR00T policy for the left arm and a different policy for the right arm may be composed **only if** both produce [T,6] trajectories for the correct respective UR5e model in joint frame, at the same control rate and for the same number of steps.
