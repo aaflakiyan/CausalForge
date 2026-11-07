@@ -28,6 +28,11 @@ jobs:
         run: |
           python -m unittest discover -s tests -p 'test_dual_ur5e.py' -v
           python -m vla_council.causalforge.dual_ur5e --menagerie "$CAUSALFORGE_MENAGERIE" --episodes 30 --duration 1.5 --out runs/dual-ur5e.json
+      - name: Independent-seed paired council comparison
+        env:
+          CAUSALFORGE_MENAGERIE: ${{ github.workspace }}/third_party/mujoco_menagerie
+        run: |
+          python -m vla_council.causalforge.dual_ur5e_multiseed --menagerie "$CAUSALFORGE_MENAGERIE" --seeds 42 43 44 45 46 --episodes 30 --out runs/dual-ur5e-multiseed.json
       - name: Render actual MuJoCo UR5e frames (OSMesa)
         env:
           CAUSALFORGE_MENAGERIE: ${{ github.workspace }}/third_party/mujoco_menagerie
@@ -57,6 +62,7 @@ jobs:
           name: dual-ur5e-results
           path: |
             runs/dual-ur5e.json
+            runs/dual-ur5e-multiseed.json
             runs/dual-ur5e-render.json
             runs/dual-ur5e.gif
             menagerie-revision.txt
