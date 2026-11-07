@@ -113,7 +113,7 @@ def contacts(model, data):
             table += 1
     return inter, table
 
-def execute(model, goals=GOALS, duration=3., render=False):
+def execute(model, goals=GOALS, duration=3., render=False, right_command_scale=1.0, right_compensation=1.0):
     import mujoco
     q, actuator, site = ids(model)
     ik = [solve_ik(model, s, goals[s]) for s in (0, 1)]
@@ -133,6 +133,9 @@ def execute(model, goals=GOALS, duration=3., render=False):
         alpha = t*t*(3 - 2*t)
         for s in (0, 1):
             cmd = HOME + alpha*(joint_goals[s]-HOME)
+            if s == 1:
+                # Fault model: attenuated right-arm setpoint delivery, not motor torque.
+                cmd = HOME + right_command_scale * right_compensation * (cmd - HOME)
             data.ctrl[actuator[s]] = np.clip(cmd, model.actuator_ctrlrange[actuator[s],0], model.actuator_ctrlrange[actuator[s],1])
         mujoco.mj_step(model, data)
         inter, tabletop = contacts(model, data)
@@ -162,6 +165,8 @@ def execute(model, goals=GOALS, duration=3., render=False):
         "table_contact_frames":int(table_contact_frames),
         "max_abs_joint_tracking_error_rad":float(max_joint_error),
         "duration_s":duration,
+        "right_command_scale":float(right_command_scale),
+        "right_compensation":float(right_compensation),
     }, frames
 
 def main():
