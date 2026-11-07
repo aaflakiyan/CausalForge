@@ -19,6 +19,7 @@ jobs:
       - run: python -m vla_council.causalforge.closed_loop --train 40 --test 30 --out runs/closed-loop-ci.json
       - run: python -m vla_council.causalforge.suite --seeds 2 --train 30 --test 20 --out runs/suite-ci.json
       - run: python -m vla_council.causalforge.ood_benchmark --backend surrogate --episodes 10 --out runs/ood-surrogate-ci.json
+      - run: python -m vla_council.causalforge.physical_distillation --backend surrogate --train 40 --test 30 --out runs/student-surrogate-ci.json
   mujoco:
     runs-on: ubuntu-latest
     steps:
@@ -31,6 +32,7 @@ jobs:
       - run: python -m vla_council.causalforge.demo --true both --out runs/diagnostic.json
       - run: python -m vla_council.causalforge.benchmark --backend mujoco --trials 4 --out runs/benchmark-mujoco.json
       - run: python -m vla_council.causalforge.ood_benchmark --backend mujoco --episodes 3 --out runs/ood-mujoco-ci.json
+      - run: python -m vla_council.causalforge.physical_distillation --backend mujoco --train 36 --test 24 --out runs/student-mujoco-ci.json
       - uses: actions/upload-artifact@v4
         if: always()
         with:
