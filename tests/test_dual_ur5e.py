@@ -8,7 +8,7 @@ from vla_council.causalforge.dual_ur5e import Config, posterior, _factor
 
 class UniversalRobotUnitTests(unittest.TestCase):
     def test_schedule_bounded_and_monotone(self):
-        for name in ("synchronous", "left_first", "right_first", "conservative"):
+        for name in ("synchronous", "left_first", "right_first", "conservative", "compensate_right"):
             for side in (0, 1):
                 values = [_factor(name, side, x) for x in np.linspace(0, 1.5, 30)]
                 self.assertTrue(all(0 <= x <= 1. for x in values))
