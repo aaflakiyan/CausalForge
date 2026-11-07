@@ -9,6 +9,19 @@
 
 > **Research prototype — not a trained humanoid foundation model.** CausalForge currently demonstrates synthetic policy teachers, physically testable hypotheses, experiment selection, recorded action replay, and small-scale MuJoCo evaluation. Pretrained GR00T / π₀ teachers and real-humanoid validation are **not yet implemented**.
 
+## Try the validated policy API in one command
+
+```bash
+python -m pip install -e '.[mujoco]'
+causalforge demo
+```
+
+The first run automatically retrieves and caches the **pinned official UR5e Menagerie model** (Git and internet access required). Every command is checked *before execution* for ordered robot joints, radians, joint frame, absolute position-control representation, 20 ms period, numerical validity, actuator/joint limits and command-rate continuity.
+
+Results are saved to `runs/quickstart/metrics.json` and a standalone `runs/quickstart/report.html`. The public Python API is **`import causalforge`**, including `causalforge.evaluate(...)`. See [Working policy API and validation contract](POLICY_API.md).
+
+This currently supports **only** dual UR5e Cartesian reaching with a built-in IK baseline, not real VLA inference or physical-hardware deployment.
+
 ## At a glance
 
 Can disagreements between robot policies become **targeted physical experiments** that generate better training examples for a smaller student policy?
