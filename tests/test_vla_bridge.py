@@ -48,6 +48,25 @@ class BridgeUnitTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             ExplicitActionMapping(replace(SPEC,ordered_axes=SPEC.ordered_axes[:-1],
                                           units=SPEC.units[:-1]))
+    def test_explicit_resampling_from_measured_joints(self):
+        source=replace(SPEC, dt=.10)
+        mapping=ExplicitActionMapping(source,resample_from_current=True)
+        data=np.stack([np.full(12,.1),np.full(12,.2)])
+        out=mapping.convert(data,"test",current_joints=np.zeros((2,6)))
+        self.assertEqual(out.actions.shape,(10,12))
+        np.testing.assert_allclose(out.actions[0],np.full(12,.02),atol=1e-12)
+        np.testing.assert_allclose(out.actions[4],np.full(12,.10),atol=1e-12)
+        np.testing.assert_allclose(out.actions[-1],np.full(12,.20),atol=1e-12)
+        self.assertEqual(out.spec.dt,.02)
+    def test_resampling_requires_initial_state_and_opt_in(self):
+        source=replace(SPEC,dt=.10)
+        with self.assertRaises(ValueError):
+            ExplicitActionMapping(source)
+        mapping=ExplicitActionMapping(source,resample_from_current=True)
+        with self.assertRaises(ValueError):
+            mapping.convert(np.ones((2,12)),"bad")
+        with self.assertRaises(ValueError):
+            ExplicitActionMapping(replace(SPEC,dt=.07),resample_from_current=True)
     def test_gr00t_one_batch_return(self):
         data=np.zeros((3,12))
         adapter=VLABackend("groot_mock","groot",GR00TMock(data),
