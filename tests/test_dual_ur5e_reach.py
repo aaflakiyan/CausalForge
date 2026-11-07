@@ -39,7 +39,10 @@ class DualUR5eReachTests(unittest.TestCase):
             self.assertEqual(result["table_contact_frames"],0,(case,result))
     def test_deterministic_replay(self):
         from vla_council.causalforge.dual_ur5e_reach import execute
-        a,_=execute(self.model,duration=3.)
+        a,_=execute(self.model,duration=3.,record_trace=True)
+        self.assertGreater(len(a['trajectory']), 50)
+        self.assertTrue(all(v['time_s'] > 0 for v in a['trajectory']))
+        self.assertTrue(all(x < .07 for x in a['trajectory'][-1]['goal_errors_m']))
         b,_=execute(self.model,duration=3.)
         self.assertTrue(np.allclose(a["final_ee_xyz_m"],b["final_ee_xyz_m"],atol=1e-8))
 
