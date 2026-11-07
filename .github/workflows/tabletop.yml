@@ -1,0 +1,35 @@
+name: MuJoCo tabletop physics
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'assets/mujoco/tabletop_push.xml'
+      - 'src/vla_council/causalforge/tabletop_push.py'
+      - '.github/workflows/tabletop.yml'
+  pull_request:
+    paths:
+      - 'assets/mujoco/tabletop_push.xml'
+      - 'src/vla_council/causalforge/tabletop_push.py'
+      - '.github/workflows/tabletop.yml'
+
+jobs:
+  tabletop:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m pip install -e '.[mujoco]'
+      - run: python -m unittest discover -s tests -p 'test_tabletop_push.py' -v
+      - name: Compare low/high floor friction at identical push
+        run: |
+          python -m vla_council.causalforge.tabletop_push --force 7 --duration 1.0 --friction 0.2 --out runs/tabletop/low_friction
+          python -m vla_council.causalforge.tabletop_push --force 7 --duration 1.0 --friction 1.2 --out runs/tabletop/high_friction
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: tabletop-physics-results
+          path: runs/tabletop/
+          if-no-files-found: error
