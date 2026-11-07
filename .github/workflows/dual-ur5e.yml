@@ -15,11 +15,13 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-      - run: python -m pip install -e '.[mujoco]'
+      - run: python -m pip install -e '.[mujoco]' && python -m pip install 'mujoco==3.17.0'
       - name: Obtain official MuJoCo Menagerie UR5e assets
         run: |
           git clone --depth 1 --filter=blob:none --sparse https://github.com/google-deepmind/mujoco_menagerie.git third_party/mujoco_menagerie
           git -C third_party/mujoco_menagerie sparse-checkout set universal_robots_ur5e
+          git -C third_party/mujoco_menagerie fetch --depth 1 origin 98a70c569c4c1b6da467a20012f766ee1f8dc521
+          git -C third_party/mujoco_menagerie checkout --detach 98a70c569c4c1b6da467a20012f766ee1f8dc521
           git -C third_party/mujoco_menagerie rev-parse HEAD > menagerie-revision.txt
           test -f third_party/mujoco_menagerie/universal_robots_ur5e/ur5e.xml
       - name: Validate opposing UR5e models and council benchmark
@@ -33,6 +35,12 @@ jobs:
           CAUSALFORGE_MENAGERIE: ${{ github.workspace }}/third_party/mujoco_menagerie
         run: |
           python -m vla_council.causalforge.dual_ur5e_multiseed --menagerie "$CAUSALFORGE_MENAGERIE" --seeds 42 43 44 45 46 --episodes 30 --out runs/dual-ur5e-multiseed.json
+      - name: Train and evaluate dual-UR5e scripted plan student
+        env:
+          CAUSALFORGE_MENAGERIE: ${{ github.workspace }}/third_party/mujoco_menagerie
+        run: |
+          python -m unittest discover -s tests -p 'test_dual_ur5e_student.py' -v
+          python -m vla_council.causalforge.dual_ur5e_student --menagerie "$CAUSALFORGE_MENAGERIE" --seed 71 --train 36 --test 18 --duration 1.0 --out runs/dual-ur5e-student.json
       - name: Render actual MuJoCo UR5e frames (OSMesa)
         env:
           CAUSALFORGE_MENAGERIE: ${{ github.workspace }}/third_party/mujoco_menagerie
@@ -63,6 +71,7 @@ jobs:
           path: |
             runs/dual-ur5e.json
             runs/dual-ur5e-multiseed.json
+            runs/dual-ur5e-student.json
             runs/dual-ur5e-render.json
             runs/dual-ur5e.gif
             menagerie-revision.txt
