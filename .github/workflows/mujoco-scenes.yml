@@ -1,0 +1,37 @@
+name: MuJoCo scene demonstrations
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'assets/mujoco/**'
+      - 'src/vla_council/causalforge/simulate_scene.py'
+      - '.github/workflows/mujoco-scenes.yml'
+  pull_request:
+    paths:
+      - 'assets/mujoco/**'
+      - 'src/vla_council/causalforge/simulate_scene.py'
+      - '.github/workflows/mujoco-scenes.yml'
+
+jobs:
+  trajectory-examples:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m pip install -e '.[mujoco]'
+      - name: Verify checked-in model and physics
+        run: python -m unittest discover -s tests -p 'test_scene_export.py' -v
+      - name: Nominal, weak motor and heavy payload experiments
+        run: |
+          python -m vla_council.causalforge.simulate_scene --force 7 --duration 0.8 --out runs/scenes/nominal --xml runs/scenes/nominal/pusher.xml
+          python -m vla_council.causalforge.simulate_scene --force 7 --duration 0.8 --motor-scale 0.42 --out runs/scenes/weak_motor
+          python -m vla_council.causalforge.simulate_scene --force 7 --duration 0.8 --payload-mass 3.0 --out runs/scenes/heavy_payload
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mujoco-scene-trajectories
+          path: runs/scenes/
+          if-no-files-found: error
