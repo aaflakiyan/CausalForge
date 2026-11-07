@@ -1,173 +1,164 @@
 # CausalForge
 
-> **Validation status (v0.5):** Core Python tests passed locally and on GitHub Actions.
-> MuJoCo simulation tests and controlled physics benchmarks have now **passed in GitHub CI**
-> ([results and limitations](MUJOCO_CI_RESULTS.md)). No real VLA checkpoints, humanoid
-> policies, or physical-robot tests have been evaluated.
-
-
 **Evidence-driven multi-teacher learning for Physical AI**
 
-[![Tests](https://github.com/aaflakiyan/CausalForge/actions/workflows/tests.yml/badge.svg)](#verification) [![Python](https://img.shields.io/badge/python-3.10%2B-blue)](pyproject.toml) [![Licence](https://img.shields.io/badge/licence-MIT-green)](LICENSE)
+[![Tests](https://github.com/aaflakiyan/CausalForge/actions/workflows/tests.yml/badge.svg)](https://github.com/aaflakiyan/CausalForge/actions/workflows/tests.yml)
+[![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB)](pyproject.toml)
+[![MuJoCo](https://img.shields.io/badge/Physics-MuJoCo-2563EB)](SIMULATION_ENVIRONMENTS.md)
+[![Licence](https://img.shields.io/badge/Licence-MIT-16A34A)](LICENSE)
 
-> **Research prototype, not a humanoid foundation model.** The executable teacher/student examples are synthetic. No GR00T, OpenPI, SmolVLA, real robot deployment, or safety certification is included. The MuJoCo integration is separately installable and has passed hosted GitHub Actions tests; it remains unverified on real hardware.
+> **Research prototype — not a trained humanoid foundation model.** CausalForge currently demonstrates synthetic policy teachers, physically testable hypotheses, experiment selection, recorded action replay, and small-scale MuJoCo evaluation. Pretrained GR00T / π₀ teachers and real-humanoid validation are **not yet implemented**.
 
-## Reproduce and inspect the MuJoCo scenes
+## At a glance
 
-The **exact** one-axis MJCF pusher model is checked in at [assets/mujoco/pusher.xml](assets/mujoco/pusher.xml). See [SIMULATION_ENVIRONMENTS.md](SIMULATION_ENVIRONMENTS.md) for model limitations and reproduction commands. This is a constrained slider with zero gravity, **not** a Panda or humanoid environment.
+Can disagreements between robot policies become **targeted physical experiments** that generate better training examples for a smaller student policy?
 
-```bash
-python -m pip install -e '.[mujoco]'
-python -m vla_council.causalforge.simulate_scene --out runs/scene --force 7 --duration 0.8
-python -m vla_council.causalforge.rollout_actions examples/pusher_policy_chunk.json --out runs/policy-replay.json
-```
+Rather than simply averaging action predictions, CausalForge tests candidate explanations, selects bounded diagnostic probes, evaluates feasible actions, and distils resulting decisions. It is intended as a reproducible testbed for this research question — not a claim that multi-teacher learning already outperforms established baselines.
 
-The scene command produces trajectory CSV and summary JSON; `--render` additionally requires `imageio` and a working OpenGL context. The recorded-action replay validates actuator semantics (unit, frame, timestep, bounds) before applying commands to the MuJoCo model. The example is **synthetic**: no GR00T or pi0 inference has been run.
+## Watch the simulation
 
-## Research question
+![Animated schematic of the verified MuJoCo tabletop trajectories](docs/media/tabletop-replay.svg)
 
-Can *testable disagreements* among specialised robot policies be converted into cheap, targeted physical experiments, providing better supervision for a compact student policy than standard imitation or unverified model voting?
+*Animated schematic reconstructed from recorded MuJoCo trajectories. Blue = actuated pusher; orange = payload. The animation is **not** an image recorded by a MuJoCo camera. Depending on the GitHub renderer, SVG animation may display as a static frame.*
 
-CausalForge is built around four boundaries:
+### Two physics environments
 
-1. **Teacher proposals:** heterogenous policies must output validated, embodiment-compatible action chunks.
-2. **Independent criticism:** physically meaningful predicted/observed costs, collisions and joint constraints determine whether a proposal can be considered. Textual AI commentary does not certify safety.
-3. **Active diagnosis:** an experiment selector chooses a bounded-cost probe to distinguish predeclared physical hypotheses, then updates Bayesian beliefs from simulated sensor data.
-4. **Student distillation:** a small student learns to reproduce the critic-selected action, and is tested on held-out scenarios and competing baseline methods.
+| One-axis pusher | Gravity-and-friction tabletop |
+|---|---|
+| ![Recorded pusher response under nominal, weak-motor and heavy-payload conditions](docs/media/pusher-trajectories.svg) | ![Recorded tabletop pushing response for low and high floor friction](docs/media/tabletop-friction.svg) |
+| [`assets/mujoco/pusher.xml`](assets/mujoco/pusher.xml) | [`assets/mujoco/tabletop_push.xml`](assets/mujoco/tabletop_push.xml) |
+| Separates hypotheses about actuation and object mass | Tests gravity, collision and floor-friction effects |
 
+All plots above are **visualisations of the recorded simulation output**, not stock images or fabricated performance curves. The plotted trajectories are sampled at 0.1-second intervals from the exported CSVs. The animation repeats the tabletop trajectories. Scene files, replay scripts, and detailed run commands are in [Simulation environments](SIMULATION_ENVIRONMENTS.md).
 
-## New: recorded pretrained-policy evaluation and physics-backed students
-
-Use the [recorded VLA protocol](RECORDED_VLA_BENCHMARK.md) to compare **externally executed** teacher checkpoint predictions in a common validated action space. The offline benchmark trains and evaluates simple supervised students; action imitation MSE is not physical task success.
-
-The [physical student benchmark](PHYSICAL_STUDENT_BENCHMARK.md) runs the causal experiment selector, synthetic teachers and trained student on independent MuJoCo states:
-
-```bash
-python -m pip install -e '.[mujoco]'
-python -m vla_council.causalforge.physical_distillation --backend mujoco --train 36 --test 24 --out runs/student-mujoco.json
-python -m vla_council.causalforge.recorded_vla data/teacher_predictions.jsonl --out runs/teacher-imitation.json
-```
-
-The second command requires user-provided JSONL recorded predictions. The test suite does **not** download or run GR00T, pi0 or SmolVLA.
-
-**Verified result:** [Five independent MuJoCo seeds](MULTISEED_MUJOCO_RESULTS.md) found equal student task loss for active and fixed probing. Read the negative results and limitations before citing any improvement. The next pretrained-model milestone is tracked in [GitHub issue #2](https://github.com/aaflakiyan/CausalForge/issues/2).
-
-## Architecture
+## How CausalForge works
 
 ```text
-     Task, observation, embodiment
-                |
-       Specialist policy proposals
-                |
-        Action-spec validation
-                |
-   Independent rollout/physics critic ----> veto infeasible actions
-                |
-      Disagreement / hypothesis set
-                |
-       Budgeted experiment selector
-                |
-   Measurement -> belief update -> action selection
-                |
-     Corrective dataset -> student training
-                |
-       Held-out paired evaluation
+ Task + observation + robot embodiment
+                 │
+         Teacher policy actions
+                 │
+   Action compatibility validation
+                 │
+         Independent critic
+                 │
+      Competing physics hypotheses
+                 │
+   Budgeted diagnostic experiment
+                 │
+   MuJoCo measurement + belief update
+                 │
+      Candidate action selection
+                 │
+       Student policy distillation
+                 │
+   Held-out tests versus baselines
 ```
 
-**What is genuinely connected today?** `closed_loop.py` connects the synthetic action-teacher selector, active probe, belief, student imitation and held-out outcome evaluation. `teacher_council.py` is a validated interface for future real-model proposals. The synthetic training loop now also runs against MuJoCo via `physical_distillation.py`. This is **not** a real-VLA training environment; see the recorded-policy interface and results below.
+There are two distinct stages in the existing code: a **synthetic closed-loop student-learning pipeline** and a **MuJoCo physical-diagnosis testbed**. They have been connected for synthetic-teacher physical distillation, but pretrained VLA end-to-end training is still future work.
 
-## Quick start
+## Get started
+
+Use Python 3.10 or newer.
 
 ```bash
+git clone https://github.com/aaflakiyan/CausalForge.git
+cd CausalForge
 python3 -m venv .venv
 source .venv/bin/activate
-python -m pip install -e .
+python -m pip install -e '.[mujoco]'
 python -m unittest discover -s tests -v
-
-# Single-seed connected synthetic teacher -> probe -> student benchmark
-python -m vla_council.causalforge.closed_loop --train 800 --test 300 --out runs/closed-loop.json
-
-# Repeated seeds and paired differences; slower
-python -m vla_council.causalforge.suite --seeds 8 --train 400 --test 160 --out runs/suite.json
-
-# Original physical-hypothesis diagnostics benchmark (algebraic backend)
-python -m vla_council.causalforge.benchmark --backend surrogate --trials 100 --out runs/diagnostics.json
 ```
 
-To exercise the *actual MuJoCo integration*, install the optional dependency:
+On Windows PowerShell, activate with `.venv\Scripts\Activate.ps1` instead.
+
+### Reproduce the two MuJoCo scenes
 
 ```bash
-python -m pip install -e '.[mujoco]'
-python -m vla_council.causalforge.demo --true both --out runs/mujoco-diagnosis.json
-python -m vla_council.causalforge.benchmark --backend mujoco --trials 8 --out runs/mujoco-benchmark.json
+# One-axis contact, exported CSV/JSON
+python -m vla_council.causalforge.simulate_scene \
+  --force 7 --duration 0.8 --out runs/pusher
+
+# Gravity and tabletop friction
+python -m vla_council.causalforge.tabletop_push \
+  --force 7 --friction 0.2 --out runs/tabletop-low
+
+python -m vla_council.causalforge.tabletop_push \
+  --force 7 --friction 1.2 --out runs/tabletop-high
+
+# Replay a validated recorded action chunk
+python -m vla_council.causalforge.rollout_actions \
+  examples/pusher_policy_chunk.json
 ```
 
-Windows PowerShell: use `.venv\Scripts\Activate.ps1` instead of `source ...`.
+The pusher runner additionally supports `--render`, which captures actual MuJoCo frames if a working OpenGL/EGL environment and `imageio` are installed.
 
-## What the experiments measure
+### Reproduce the research comparisons
 
-| Experiment | Implemented? | Outcome |
-|---|---|---|
-| Synthetic teacher proposal and independent critic | Yes | Candidate veto / selection |
-| Active vs random/fixed/no-probe hypothesis diagnosis | Yes | Coverage, calibration, nominal probe cost, goal error |
-| Teacher -> active experiments -> distilled student | Yes, synthetic only | Held-out task loss, imitation fidelity, paired comparisons |
-| Independent MuJoCo contact benchmark | Tested in hosted CI | Encoder-based diagnosis and target displacement; see [measured results](MUJOCO_CI_RESULTS.md) |
-| Real VLA teachers on shared robot embodiment | No | Required next step |
-| Panda/Unitree humanoid learning in MuJoCo | No | Required next step |
-| Student VLA checkpoint trained on real demonstrations | No | Required next step |
+```bash
+# Synthetic teacher → probe → student experiment
+python -m vla_council.causalforge.closed_loop \
+  --train 800 --test 300 --out runs/closed-loop.json
 
-The synthetic environment has **two predefined hypotheses** (`weak_motor`, `heavy_payload`) and **three scripted control candidates**. An active decision system cannot discover a cause that is not in its hypothesis family. The surrogate's movement is algebraic, not a contact dynamics engine. Do not interpret successful toy benchmarks as humanoid robotics performance.
+# MuJoCo diagnosis baselines
+python -m vla_council.causalforge.benchmark \
+  --backend mujoco --trials 8 --out runs/mujoco-benchmark.json
 
-### Baselines and leakage controls
+# MuJoCo synthetic-teacher distillation
+python -m vla_council.causalforge.physical_distillation \
+  --backend mujoco --train 36 --test 24 \
+  --out runs/student-mujoco.json
+```
 
-Every method uses the same train/test task sets, with independent train and test random seeds. Student features contain only the target and posterior probabilities; the hidden dynamics label is never directly encoded. The `oracle` receives the hidden label *deliberately* as a non-deployable performance ceiling. Each method trains a separate small ridge-classification student and reports the task-loss gap versus its corresponding teacher council and oracle.
+## What is implemented and what is missing?
 
-**Caveat:** average experiment costs differ by method, and the two-hypothesis evaluation is not out-of-distribution. Do not interpret any raw win as a cost-matched scientific result. The repeated-seed report provides across-seed variability, not formal causal identification or a real-world confidence guarantee.
+| Component | State |
+|---|---|
+| Synthetic teacher selection and criticism | Implemented |
+| Budgeted physics-hypothesis diagnosis | Implemented |
+| Action-space contract and recorded action replay | Implemented |
+| Two inspectable MuJoCo MJCF scenes | Implemented |
+| Repeated-seed synthetic-teacher student comparisons | Tested in CI |
+| Real pretrained GR00T / π₀ model inference | **Not yet run** |
+| Humanoid whole-body manipulation and balance | **Not yet implemented** |
+| Evidence that active probing beats matched-cost baselines | **Not established** |
+| Safe physical robot deployment | **Not validated** |
 
-## Project layout
+Existing benchmarks have found **limited or no student-loss improvement from active probing versus fixed probing** in some tested configurations. Results should be read as exploratory physics experiments, not proof of superiority.
+
+## Code map
 
 ```text
-src/vla_council/
-  cli.py, core.py, council.py, sim.py, student.py, teachers.py
-  causalforge/
-    vla_interface.py     # strict robot/action/time/frame contract
-    teacher_council.py   # independent critic and veto
-    experiment.py        # hypothesis prediction and Bayesian update
-    active.py            # information-gain acquisition under probe budget
-    mujoco_push.py       # optional compiled MuJoCo contact model
-    benchmark.py         # diagnosis baselines on surrogate/MuJoCo
-    closed_loop.py       # connected toy teacher/probe/student pipeline
-    suite.py             # repeated-seed paired evaluation
-    demo.py              # MuJoCo diagnostic demo
-tests/                   # deterministic and optional MuJoCo checks
-.github/workflows/       # Python matrix and MuJoCo CI definition
+assets/mujoco/               # pusher.xml, tabletop_push.xml
+docs/media/                  # measured-trajectory plots and animated replay
+src/vla_council/causalforge/
+  vla_interface.py           # action/robot/frame/unit/time contract
+  teacher_council.py         # policy comparison and feasibility screening
+  active.py                  # bounded active probe selection
+  experiment.py              # causal hypothesis updates
+  mujoco_push.py             # original MuJoCo physical system
+  simulate_scene.py          # CSV/JSON trajectory export and optional render
+  tabletop_push.py           # gravity and variable friction
+  rollout_actions.py         # replay recorded action chunks
+  physical_distillation.py   # synthetic-teacher MuJoCo comparison
+  recorded_vla.py            # recorded-policy evaluation interface
+tests/                       # deterministic and MuJoCo-dependent tests
+.github/workflows/           # multi-Python and MuJoCo CI
 ```
 
-## VLA integration contract
+## Research integrity and safety
 
-`ActionSpec` specifies the robot, action representation, ordered axes, units, coordinate frame and sampling period. `ActionChunk` holds an `[T, D]` prediction. `teacher_council.decide()` requires a common representation and independent evaluator; it abstains when all candidates violate the provided constraints. It is **not** a safety controller. To add a real model, write a model-specific adapter that explicitly converts its outputs into a matching `ActionSpec`; validate its observation schema, gripper mapping and time horizon. Do not average unaligned action tensors.
+- Different models must use an explicitly validated common robot embodiment, action representation, units, coordinate frame, timing and controller. Matching tensor shape alone is insufficient.
+- Simulated probe predictions can fail under model mismatch; unfamiliar physics was poorly recognised in earlier tests.
+- The physics testbeds use a pusher, **not a full robot arm or humanoid**.
+- Neither independent criticism nor simulation certifies robot safety. Physical deployment needs separate low-level safety checks, limits and emergency stop capabilities.
 
-Recommended *future* research integration: begin with two policies that demonstrably support the exact same Panda embodiment and shared manipulation task, then benchmark individual teachers, simple ensemble, distillation, council gating and active teacher selection. Only after controlled comparisons progress to humanoid whole-body manipulation with a separate real-time controller.
+Read [Validation](VALIDATION.md), [Physics benchmark](PHYSICS_BENCHMARK.md), [Results](RESULTS.md), [MuJoCo CI results](MUJOCO_CI_RESULTS.md) and [GPU setup](GPU_SETUP.md) for the measured outcomes, failures and limitations.
 
-## Verification
+## Next research milestone
 
-Run `python -m unittest discover -s tests -v`. GitHub Actions defines a Python 3.10/3.11/3.12 matrix and an independent MuJoCo job. All four jobs passed in [GitHub Actions run 42358370776](https://github.com/aaflakiyan/CausalForge/actions/runs/42358370776), including the MuJoCo test job. See [MUJOCO_CI_RESULTS.md](MUJOCO_CI_RESULTS.md) for measured data and limits.
+Integrate **two genuine, robot-compatible VLA checkpoints** into a common manipulation benchmark, collect comparable teacher predictions, and train one student. Evaluate standalone teachers, simple ensembles, regular distillation and CausalForge active selection under matched budgets. Only then assess whether this system meaningfully improves learning.
 
-## Scientific and safety limitations
+## Licence
 
-No model weights, other projects' code, or datasets are redistributed. Real hardware requires independently tested collision, joint-limit, force and emergency-stop controls. The simulator cannot certify a real robot's safety. Metrics from simulated probes are only as reliable as the model, its noise assumptions and the scenarios tested. See [RESEARCH_PLAN.md](RESEARCH_PLAN.md).
-
-MIT licence for this repository's original code. Third-party software/checkpoints retain their own licences and usage terms.
-
-## Unknown-physics comparison (v0.5)
-
-```bash
-python -m vla_council.causalforge.ood_benchmark --backend surrogate --episodes 50
-python -m vla_council.causalforge.ood_benchmark --backend mujoco --episodes 3
-```
-
-Results identify the backend, distinguish known and unseen dynamics, report
-unknown-condition rejection, physical intervention duration and magnitude, and
-task loss against an oracle ceiling. See `PHYSICS_BENCHMARK.md`. The callable
-`CallableVLATeacher` interface enables explicit checkpoint integration without
-pretending that a placeholder is a pretrained model.
+[MIT](LICENSE) for original repository code. All third-party software, datasets and checkpoints retain their respective licences.
