@@ -20,7 +20,7 @@ GOALS = np.stack([LEFT_GOAL, RIGHT_GOAL])
 def reach_arena():
     text = ARENA.replace(
         'pos="0 -2.5 2.2" xyaxes="1 0 0 0 0.45 0.89"',
-        'pos="0 -1.70 1.32" xyaxes="1 0 0 0 0.4 0.916515"'
+        'pos="0 -2.35 1.80" xyaxes="1 0 0 0 0.46 0.887919"'
     )
     marker = '    <frame name="left_mount"'
     addition = (
