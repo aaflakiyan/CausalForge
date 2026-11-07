@@ -16,3 +16,14 @@ jobs:
           git clone --depth 1 --filter=blob:none --sparse https://github.com/google-deepmind/mujoco_menagerie.git third_party/mujoco_menagerie
           git -C third_party/mujoco_menagerie sparse-checkout set universal_robots_ur5e
       - run: python -m vla_council.causalforge.dual_ur5e_audit --menagerie third_party/mujoco_menagerie
+      - name: Validate workspace-reach geometry and tracking
+        env:
+          CAUSALFORGE_MENAGERIE: ${{ github.workspace }}/third_party/mujoco_menagerie
+        run: |
+          python -m unittest discover -s tests -p 'test_dual_ur5e_reach.py' -v
+          python -m vla_council.causalforge.dual_ur5e_reach --menagerie "$CAUSALFORGE_MENAGERIE" --out runs/dual-ur5e-reach.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: dual-ur5e-reach-validation
+          path: runs/*.json
