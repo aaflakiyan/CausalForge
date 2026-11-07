@@ -22,12 +22,14 @@ class FaultTests(unittest.TestCase):
     def test_small_paired_comparison(self):
         from vla_council.causalforge.dual_ur5e_recovery import benchmark, Config
         result=benchmark(Path(os.environ["CAUSALFORGE_MENAGERIE"]),Config(episodes=6))
-        self.assertEqual(len(result["episodes"]),24)
+        self.assertEqual(len(result["episodes"]),30)
         self.assertEqual(set(result["summary"]),{
-            "no_probe","fixed_left_probe","random_probe","active_probe"})
+            "no_probe","fixed_left_probe","fixed_right_probe","random_probe","active_probe"})
         self.assertEqual(result["active_probe_arm"],1)
         self.assertLess(result["summary"]["active_probe"]["mean_error_m"],
                         result["summary"]["no_probe"]["mean_error_m"])
+        self.assertAlmostEqual(result["summary"]["active_probe"]["mean_error_m"],
+                               result["summary"]["fixed_right_probe"]["mean_error_m"],places=10)
 
 if __name__=="__main__":
     unittest.main()
