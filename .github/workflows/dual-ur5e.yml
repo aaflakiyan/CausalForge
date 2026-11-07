@@ -47,6 +47,8 @@ jobs:
           git add docs/media/dual-ur5e-actual.gif
           if ! git diff --cached --quiet; then
             git commit -m "docs: add actual dual UR5e MuJoCo render"
+            git fetch origin feature/dual-ur5e-benchmark
+            git rebase origin/feature/dual-ur5e-benchmark
             git push origin HEAD:feature/dual-ur5e-benchmark
           fi
       - uses: actions/upload-artifact@v4
