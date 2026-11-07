@@ -14,7 +14,7 @@ from .dual_ur5e import probe_result, posterior
 
 HYPOTHESES = (1.0, .55)
 TEACHERS = {"nominal_setpoints": 1., "compensated_right": 1. / .55}
-STRATEGIES = ("no_probe", "fixed_left_probe", "random_probe", "active_probe")
+STRATEGIES = ("no_probe", "fixed_left_probe", "fixed_right_probe", "random_probe", "active_probe")
 
 @dataclass(frozen=True)
 class Config:
@@ -57,6 +57,7 @@ def benchmark(menagerie: Path, cfg: Config = Config()):
                 belief = [0.5, 0.5]
             else:
                 arm = (0 if strategy == "fixed_left_probe" else
+                       1 if strategy == "fixed_right_probe" else
                        int(rng.integers(0, 2)) if strategy == "random_probe" else active_arm)
                 observation = probe_result(model, arm, truth, cfg.probe_delta_rad,
                                            cfg.probe_duration_s) + noise
