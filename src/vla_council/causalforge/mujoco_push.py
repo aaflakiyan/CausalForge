@@ -71,8 +71,8 @@ def run(physics: Physics, force: float, duration: float) -> Result:
     # mass-related model constants before the first dynamics evaluation.
     mujoco.mj_setConst(m, d)
     mujoco.mj_forward(m, d)
-    j_pusher = int(m.joint('pusher_x').qposadr)
-    j_payload = int(m.joint('payload_x').qposadr)
+    j_pusher = int(np.asarray(m.joint('pusher_x').qposadr).item())
+    j_payload = int(np.asarray(m.joint('payload_x').qposadr).item())
     initial = d.qpos[[j_pusher, j_payload]].copy()
     for _ in range(round(duration/m.opt.timestep)):
         d.ctrl[0] = force
