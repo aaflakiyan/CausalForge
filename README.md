@@ -23,6 +23,23 @@ CausalForge is built around four boundaries:
 3. **Active diagnosis:** an experiment selector chooses a bounded-cost probe to distinguish predeclared physical hypotheses, then updates Bayesian beliefs from simulated sensor data.
 4. **Student distillation:** a small student learns to reproduce the critic-selected action, and is tested on held-out scenarios and competing baseline methods.
 
+
+## New: recorded pretrained-policy evaluation and physics-backed students
+
+Use the [recorded VLA protocol](RECORDED_VLA_BENCHMARK.md) to compare **externally executed** teacher checkpoint predictions in a common validated action space. The offline benchmark trains and evaluates simple supervised students; action imitation MSE is not physical task success.
+
+The [physical student benchmark](PHYSICAL_STUDENT_BENCHMARK.md) runs the causal experiment selector, synthetic teachers and trained student on independent MuJoCo states:
+
+```bash
+python -m pip install -e '.[mujoco]'
+python -m vla_council.causalforge.physical_distillation --backend mujoco --train 36 --test 24 --out runs/student-mujoco.json
+python -m vla_council.causalforge.recorded_vla data/teacher_predictions.jsonl --out runs/teacher-imitation.json
+```
+
+The second command requires user-provided JSONL recorded predictions. The test suite does **not** download or run GR00T, pi0 or SmolVLA.
+
+**Verified result:** [Five independent MuJoCo seeds](MULTISEED_MUJOCO_RESULTS.md) found equal student task loss for active and fixed probing. Read the negative results and limitations before citing any improvement. The next pretrained-model milestone is tracked in [GitHub issue #2](https://github.com/aaflakiyan/CausalForge/issues/2).
+
 ## Architecture
 
 ```text
@@ -45,7 +62,7 @@ CausalForge is built around four boundaries:
        Held-out paired evaluation
 ```
 
-**What is genuinely connected today?** `closed_loop.py` connects the synthetic action-teacher selector, active probe, belief, student imitation and held-out outcome evaluation. `teacher_council.py` is a validated interface for future real-model proposals. The MuJoCo physical testbed is a separate module; it is **not** yet a full VLA training environment.
+**What is genuinely connected today?** `closed_loop.py` connects the synthetic action-teacher selector, active probe, belief, student imitation and held-out outcome evaluation. `teacher_council.py` is a validated interface for future real-model proposals. The synthetic training loop now also runs against MuJoCo via `physical_distillation.py`. This is **not** a real-VLA training environment; see the recorded-policy interface and results below.
 
 ## Quick start
 
