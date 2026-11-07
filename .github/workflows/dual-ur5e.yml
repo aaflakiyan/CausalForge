@@ -26,11 +26,22 @@ jobs:
         run: |
           python -m unittest discover -s tests -p 'test_dual_ur5e.py' -v
           python -m vla_council.causalforge.dual_ur5e --menagerie "$CAUSALFORGE_MENAGERIE" --episodes 6 --duration 1.5 --out runs/dual-ur5e.json
+      - name: Render actual MuJoCo UR5e frames (OSMesa)
+        env:
+          CAUSALFORGE_MENAGERIE: ${{ github.workspace }}/third_party/mujoco_menagerie
+          MUJOCO_GL: osmesa
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y libosmesa6 libosmesa6-dev
+          python -m pip install imageio pillow
+          python -m vla_council.causalforge.dual_ur5e --menagerie "$CAUSALFORGE_MENAGERIE" --episodes 1 --out runs/dual-ur5e-render.json --render runs/dual-ur5e.gif
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: dual-ur5e-results
           path: |
             runs/dual-ur5e.json
+            runs/dual-ur5e-render.json
+            runs/dual-ur5e.gif
             menagerie-revision.txt
           if-no-files-found: warn
