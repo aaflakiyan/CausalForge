@@ -60,3 +60,8 @@ executes physical regression tests, but will only run after a remote push.
 The unknown-dynamics benchmark is new and deliberately reports a negative
 finding: active probing increases diagnosis accuracy but fails to improve task
 loss or reject unseen parameter cases reliably. See `RESULTS.md`.
+
+
+## Verified hosted MuJoCo run (7 November 2026)
+
+The earlier local-wheel blocker was resolved through GitHub Actions: [run 42358370776](https://github.com/aaflakiyan/CausalForge/actions/runs/42358370776) **passed** all four jobs (Python 3.10, 3.11, 3.12 and MuJoCo). The MuJoCo CI artifact contains actual physics-derived diagnostics, comparison results and unknown-dynamics benchmarks. The test runner is not real humanoid hardware. See [MUJOCO_CI_RESULTS.md](MUJOCO_CI_RESULTS.md). Existing statements above about local wheel unavailability remain true of the local workspace, not the hosted CI environment.

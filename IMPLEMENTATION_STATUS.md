@@ -22,3 +22,8 @@ package index; real VLA checkpoints compatible with one embodiment; grasping
 and full-body humanoid environments; student training on physically sampled
 VLA demonstrations; externally validated safety supervision. None of these
 is claimed complete.
+
+
+## Hosted CI update (7 November 2026)
+
+MuJoCo is now **executed and validated on GitHub-hosted CI**, following a fix for array-valued joint address attributes. [All four CI jobs succeeded](https://github.com/aaflakiyan/CausalForge/actions/runs/42358370776). The resulting limited-sample physics comparisons are recorded in [MUJOCO_CI_RESULTS.md](MUJOCO_CI_RESULTS.md). Real VLA models, real robot tests and humanoid controls are still outstanding.

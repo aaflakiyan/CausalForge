@@ -1,17 +1,16 @@
 # CausalForge
 
-> **Validation status (v0.5):** NumPy experiments and tests run locally. MuJoCo is
-> included as an executable backend with dedicated CI checks, but this runtime
-> cannot install the MuJoCo wheel. No pretrained VLA checkpoints are bundled
-> and no humanoid performance claim has been established. See
-> [PHYSICS_BENCHMARK.md](PHYSICS_BENCHMARK.md).
+> **Validation status (v0.5):** Core Python tests passed locally and on GitHub Actions.
+> MuJoCo simulation tests and controlled physics benchmarks have now **passed in GitHub CI**
+> ([results and limitations](MUJOCO_CI_RESULTS.md)). No real VLA checkpoints, humanoid
+> policies, or physical-robot tests have been evaluated.
 
 
 **Evidence-driven multi-teacher learning for Physical AI**
 
-[![Tests](https://img.shields.io/badge/tests-37%20collected-informational)](#verification) [![Python](https://img.shields.io/badge/python-3.10%2B-blue)](pyproject.toml) [![Licence](https://img.shields.io/badge/licence-MIT-green)](LICENSE)
+[![Tests](https://github.com/aaflakiyan/CausalForge/actions/workflows/tests.yml/badge.svg)](#verification) [![Python](https://img.shields.io/badge/python-3.10%2B-blue)](pyproject.toml) [![Licence](https://img.shields.io/badge/licence-MIT-green)](LICENSE)
 
-> **Research prototype, not a humanoid foundation model.** The executable teacher/student examples are synthetic. No GR00T, OpenPI, SmolVLA, real robot deployment, or safety certification is included. The MuJoCo integration is separately installable and was not executable in the authoring environment.
+> **Research prototype, not a humanoid foundation model.** The executable teacher/student examples are synthetic. No GR00T, OpenPI, SmolVLA, real robot deployment, or safety certification is included. The MuJoCo integration is separately installable and has passed hosted GitHub Actions tests; it remains unverified on real hardware.
 
 ## Research question
 
@@ -83,7 +82,7 @@ Windows PowerShell: use `.venv\Scripts\Activate.ps1` instead of `source ...`.
 | Synthetic teacher proposal and independent critic | Yes | Candidate veto / selection |
 | Active vs random/fixed/no-probe hypothesis diagnosis | Yes | Coverage, calibration, nominal probe cost, goal error |
 | Teacher -> active experiments -> distilled student | Yes, synthetic only | Held-out task loss, imitation fidelity, paired comparisons |
-| Independent MuJoCo contact benchmark | Code present, local execution unverified | Encoder-based diagnosis and target displacement |
+| Independent MuJoCo contact benchmark | Tested in hosted CI | Encoder-based diagnosis and target displacement; see [measured results](MUJOCO_CI_RESULTS.md) |
 | Real VLA teachers on shared robot embodiment | No | Required next step |
 | Panda/Unitree humanoid learning in MuJoCo | No | Required next step |
 | Student VLA checkpoint trained on real demonstrations | No | Required next step |
@@ -123,7 +122,7 @@ Recommended *future* research integration: begin with two policies that demonstr
 
 ## Verification
 
-Run `python -m unittest discover -s tests -v`. GitHub Actions defines a Python 3.10/3.11/3.12 matrix and an independent MuJoCo job. Presence of a workflow file does not mean its hosted job has executed successfully; see [VALIDATION.md](VALIDATION.md) for recorded local results and limitations.
+Run `python -m unittest discover -s tests -v`. GitHub Actions defines a Python 3.10/3.11/3.12 matrix and an independent MuJoCo job. All four jobs passed in [GitHub Actions run 42358370776](https://github.com/aaflakiyan/CausalForge/actions/runs/42358370776), including the MuJoCo test job. See [MUJOCO_CI_RESULTS.md](MUJOCO_CI_RESULTS.md) for measured data and limits.
 
 ## Scientific and safety limitations
 
