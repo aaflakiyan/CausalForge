@@ -110,6 +110,13 @@ def main(argv: list[str] | None = None) -> int:
     demo.add_argument("--cache",type=Path,help="Change the automatic robot-asset cache")
     demo.add_argument("--out",type=Path,default=Path("runs/quickstart"))
     demo.add_argument("--trace",action="store_true",help="Save each measured control step")
+    vla_demo = sub.add_parser(
+        "demo-vlas",
+        help="Run three MOCK VLA inference interfaces against real MuJoCo UR5e physics"
+    )
+    vla_demo.add_argument("--menagerie",type=Path)
+    vla_demo.add_argument("--cache",type=Path)
+    vla_demo.add_argument("--out",type=Path,default=Path("runs/vla-bridge-demo"))
     args = parser.parse_args(argv)
     if args.command == "demo":
         from .dual_ur5e_policy import BuiltinReachPolicy,evaluate
@@ -128,6 +135,21 @@ def main(argv: list[str] | None = None) -> int:
         print(f"  Evidence: {args.out/'metrics.json'}")
         print(f"  Report: {args.out/'report.html'}")
         return 0 if report["task_success"] else 1
+    if args.command == "demo-vlas":
+        from .vla_bridge_demo import run
+        root = locate_menagerie(args.menagerie, args.cache)
+        report = run(root)
+        args.out.mkdir(parents=True,exist_ok=True)
+        (args.out/"metrics.json").write_text(json.dumps(report,indent=2)+"\n",encoding="utf-8")
+        ok = not report["rejected"] and all(v["task_success"] for v in report["teachers"].values())
+        print("CausalForge multi-VLA protocol compatibility (MOCK PROVIDERS, no pretrained inference)")
+        for name, result in report["teachers"].items():
+            print(f"  {name}: {'PASS' if result['task_success'] else 'FAIL'}"
+                  f", max goal error {max(result['tool_error_m'])*1000:.2f} mm")
+        if report["rejected"]:
+            print(f"  Rejected: {report['rejected']}")
+        print(f"  Evidence: {args.out/'metrics.json'}")
+        return 0 if ok else 1
     return 2
 
 if __name__=="__main__":
