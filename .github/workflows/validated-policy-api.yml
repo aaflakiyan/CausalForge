@@ -31,9 +31,17 @@ jobs:
       - name: Run actual installed CLI and record measured task results
         run: |
           causalforge demo --menagerie third_party/mujoco_menagerie --trace --out runs/validated-quickstart
-          python -c 'import json; d=json.load(open("runs/validated-quickstart/metrics.json")); assert d["task_success"]; assert len(d["trace"])==150; assert d["physics_substeps_per_action"]==5'
+          python -c 'import json; d=json.load(open("runs/validated-quickstart/metrics.json")); assert d["task_success"]; assert len(d["trace"])==150; assert d["physics_substeps_per_action"]==5; assert __import__("pathlib").Path("runs/validated-quickstart/report.html").is_file()'
+      - name: Test fully automatic asset download and cache reuse
+        run: |
+          causalforge demo --cache runs/test-asset-cache --out runs/auto-download-test
+          causalforge demo --cache runs/test-asset-cache --out runs/cache-hit-test
+          python -c 'from pathlib import Path; assert Path("runs/auto-download-test/report.html").exists(); assert Path("runs/cache-hit-test/metrics.json").exists()'
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: validated-dual-ur5e-policy
-          path: runs/validated-quickstart/
+          path: |
+            runs/validated-quickstart/
+            runs/auto-download-test/
+            runs/cache-hit-test/
