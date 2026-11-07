@@ -1,0 +1,69 @@
+name: Dual UR5e MuJoCo benchmark
+on:
+  push:
+    branches: [main, "feature/dual-ur5e-benchmark"]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  dual-ur5e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: python -m pip install -e '.[mujoco]'
+      - name: Obtain official MuJoCo Menagerie UR5e assets
+        run: |
+          git clone --depth 1 --filter=blob:none --sparse https://github.com/google-deepmind/mujoco_menagerie.git third_party/mujoco_menagerie
+          git -C third_party/mujoco_menagerie sparse-checkout set universal_robots_ur5e
+          git -C third_party/mujoco_menagerie rev-parse HEAD > menagerie-revision.txt
+          test -f third_party/mujoco_menagerie/universal_robots_ur5e/ur5e.xml
+      - name: Validate opposing UR5e models and council benchmark
+        env:
+          CAUSALFORGE_MENAGERIE: ${{ github.workspace }}/third_party/mujoco_menagerie
+        run: |
+          python -m unittest discover -s tests -p 'test_dual_ur5e.py' -v
+          python -m vla_council.causalforge.dual_ur5e --menagerie "$CAUSALFORGE_MENAGERIE" --episodes 30 --duration 1.5 --out runs/dual-ur5e.json
+      - name: Independent-seed paired council comparison
+        env:
+          CAUSALFORGE_MENAGERIE: ${{ github.workspace }}/third_party/mujoco_menagerie
+        run: |
+          python -m vla_council.causalforge.dual_ur5e_multiseed --menagerie "$CAUSALFORGE_MENAGERIE" --seeds 42 43 44 45 46 --episodes 30 --out runs/dual-ur5e-multiseed.json
+      - name: Render actual MuJoCo UR5e frames (OSMesa)
+        env:
+          CAUSALFORGE_MENAGERIE: ${{ github.workspace }}/third_party/mujoco_menagerie
+          MUJOCO_GL: osmesa
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y libosmesa6 libosmesa6-dev
+          python -m pip install imageio pillow
+          python -m vla_council.causalforge.dual_ur5e --menagerie "$CAUSALFORGE_MENAGERIE" --episodes 1 --out runs/dual-ur5e-render.json --render runs/dual-ur5e.gif
+      - name: Commit verified MuJoCo render to the feature branch
+        if: github.ref == 'refs/heads/feature/dual-ur5e-benchmark' && github.event_name == 'push'
+        run: |
+          mkdir -p docs/media
+          cp runs/dual-ur5e.gif docs/media/dual-ur5e-actual.gif
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/media/dual-ur5e-actual.gif
+          if ! git diff --cached --quiet; then
+            git commit -m "docs: add actual dual UR5e MuJoCo render"
+            git fetch origin feature/dual-ur5e-benchmark
+            git rebase origin/feature/dual-ur5e-benchmark
+            git push origin HEAD:feature/dual-ur5e-benchmark
+          fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: dual-ur5e-results
+          path: |
+            runs/dual-ur5e.json
+            runs/dual-ur5e-multiseed.json
+            runs/dual-ur5e-render.json
+            runs/dual-ur5e.gif
+            menagerie-revision.txt
+          if-no-files-found: warn
