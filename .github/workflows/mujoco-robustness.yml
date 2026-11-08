@@ -1,0 +1,40 @@
+name: MuJoCo latency and action validation stress
+on:
+  push:
+    branches: [main, feature/mujoco-robustness-audit]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  ur5e-latency:
+    runs-on: ubuntu-latest
+    timeout-minutes: 28
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m pip install -e '.[mujoco]'
+      - name: Get pinned official robot geometry
+        run: |
+          git clone --depth 1 --filter=blob:none --sparse https://github.com/google-deepmind/mujoco_menagerie.git third_party/mujoco_menagerie
+          git -C third_party/mujoco_menagerie fetch --depth 1 origin 98a70c569c4c1b6da467a20012f766ee1f8dc521
+          git -C third_party/mujoco_menagerie checkout FETCH_HEAD
+          git -C third_party/mujoco_menagerie sparse-checkout set universal_robots_ur5e
+          git -C third_party/mujoco_menagerie rev-parse HEAD > robot-model-revision.txt
+      - name: Validate delay implementation and negative controls
+        env:
+          CAUSALFORGE_MENAGERIE: ${{ github.workspace }}/third_party/mujoco_menagerie
+        run: python -m unittest discover -s tests -p 'test_latency_audit.py' -v
+      - name: Run paired multi-seed physical robustness audit
+        run: |
+          python -m vla_council.causalforge.latency_audit --menagerie third_party/mujoco_menagerie --seeds 41 42 43 --goals-per-seed 4 --delay-ticks 0 2 5 10 --out runs/latency-robustness.json
+          python -c 'import json; r=json.load(open("runs/latency-robustness.json")); assert len(r["trials"])==48; assert set(r["results"])=={"0","2","5","10"}'
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: official-mujoco-latency-robustness
+          path: |
+            runs/latency-robustness.json
+            robot-model-revision.txt
