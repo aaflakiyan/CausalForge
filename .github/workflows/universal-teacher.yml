@@ -1,0 +1,35 @@
+name: Universal teacher distillation and reasoning
+on:
+  push:
+    branches: [main, feature/universal-teacher-distillation]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  cpu-universal:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    strategy:
+      matrix:
+        python-version: ['3.10','3.11','3.12']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - run: python -m pip install -e .
+      - name: Test heterogeneous student and structured reasoner
+        run: |
+          python -m unittest discover -s tests -p 'test_universal_teacher.py' -v
+          python -m unittest discover -s tests -p 'test_physical_reasoning.py' -v
+          python -m unittest discover -s tests -p 'test_curriculum.py' -v
+          python -m unittest discover -s tests -p 'test_semantic_mapper.py' -v
+          python -m unittest discover -s tests -p 'test_universal_demo.py' -v
+          python -m vla_council.causalforge.universal_demo --out runs/universal-student --episodes 36
+          python -c 'import json; d=json.load(open("runs/universal-student/report.json")); assert not d["checkpoint_inference"] and len(d["embodiments"])==2'
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: universal-student-python-${{ matrix.python-version }}
+          path: runs/universal-student/

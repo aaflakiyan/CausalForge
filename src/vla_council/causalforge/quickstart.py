@@ -117,6 +117,12 @@ def main(argv: list[str] | None = None) -> int:
     vla_demo.add_argument("--menagerie",type=Path)
     vla_demo.add_argument("--cache",type=Path)
     vla_demo.add_argument("--out",type=Path,default=Path("runs/vla-bridge-demo"))
+    distill = sub.add_parser(
+        "distill-demo", help="Train a SYNTHETIC multi-teacher, multi-embodiment student without GPU"
+    )
+    distill.add_argument("--out",type=Path,default=Path("runs/universal-student"))
+    distill.add_argument("--episodes",type=int,default=80)
+    distill.add_argument("--seed",type=int,default=42)
     args = parser.parse_args(argv)
     if args.command == "demo":
         from .dual_ur5e_policy import BuiltinReachPolicy,evaluate
@@ -150,6 +156,15 @@ def main(argv: list[str] | None = None) -> int:
             print(f"  Rejected: {report['rejected']}")
         print(f"  Evidence: {args.out/'metrics.json'}")
         return 0 if ok else 1
+    if args.command == "distill-demo":
+        from .universal_demo import run
+        report=run(args.out,seed=args.seed,n=args.episodes)
+        print("CausalForge UNIVERSAL student demo (SYNTHETIC teachers, NO pretrained models)")
+        for robot,score in report["scores"]["per_embodiment"].items():
+            print(f"  {robot}: held-out teacher-label MSE {score['mean_mse']:.6f}")
+        print(f"  Saved: {args.out/'student.json'}")
+        print(f"  Evidence: {args.out/'report.json'}")
+        return 0
     return 2
 
 if __name__=="__main__":
