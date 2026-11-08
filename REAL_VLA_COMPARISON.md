@@ -12,9 +12,25 @@ This addition attempts an authentic checkpoint comparison in a **native task**:
 
 The native PushT simulator uses **Pymunk**, **not MuJoCo**. It has two-dimensional end-effector actions. **Do not route its checkpoint actions into a six-joint UR5e**; the robot, control mode and semantics differ. Treat this as a real-checkpoint inference track complementary to MuJoCo mechanical validation.
 
+## Actual first checkpoint trial: measured outcomes and blockers
+
+The first experimental CI run used **Python 3.11, LeRobot 0.4.4, CPU, PushT seed 42, one episode**. The publicly hosted weights were fetched and passed to LeRobot's native evaluator; no mock actions were injected.
+
+| Model | Checkpoint loaded and evaluated? | Actual PushT metric or blocker |
+| --- | --- | --- |
+| `aadarshram/act_pusht` | **Yes** | 42.34% maximum shape overlap, **0/1** task success. Native episode video and `eval_info.json` are archived. |
+| `n3puiol/smolvla_pusht` | **No** | Model repository lacks required `policy_preprocessor.json`; LeRobot 0.4.4 refused checkpoint evaluation. **No result** is reported. |
+| `lerobot/vqbet_pusht` | **No** | Older checkpoint config contains `mlp_hidden_dim`, which the current `VQBeTConfig` parser rejects. **No result** is reported. |
+
+The native checkpoint experiment exposed real third-party model-version incompatibilities. These are **not** evidence that SmolVLA or VQ-BeT perform poorly at the underlying manipulation task.
+
+The action-schema preflight also downloaded the genuine checkpoint configuration revisions and found both SmolVLA and ACT PushT checkpoints produce **two-dimensional actions**, so neither may be applied directly to the dual-UR5e 12-joint simulator. This safeguard is automatically tested using live Hugging Face metadata.
+
+The genuine ACT episode result is one trial only, so it is **not** a reliable estimate of performance or evidence about which policy is better.
+
 ## Run real pretrained models on their native task
 
-A version-matched LeRobot installation and network access to Hugging Face model files are required. The CI runner pins `lerobot==0.4.4` to reduce upstream API drift. On a suitable Python 3.11 environment:
+A version-matched LeRobot installation and network access to Hugging Face model files are required. Current upstream checkpoints may need independent version migration; the first SmolVLA and VQ-BeT attempts are documented above. The CI runner pins `lerobot==0.4.4` to reduce upstream API drift. On a suitable Python 3.11 environment:
 
 ```bash
 pip install -e .
