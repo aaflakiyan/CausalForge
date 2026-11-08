@@ -75,6 +75,19 @@ class HeterogeneousEvidenceTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             student.predict((.1,.2,1.),robot="unknown")
 
+    def test_student_abstains_on_out_of_training_range(self):
+        student=UnifiedStudent().fit(records())
+        fresh=records()[0]
+        inside=student.coverage(fresh.task_features,robot="dual_ur5e")
+        self.assertTrue(inside["within_training_feature_ranges"])
+        far=(500.,500.,500.)
+        risk=student.coverage(far,robot="dual_ur5e")
+        self.assertTrue(risk["recommend_specialist_or_new_probe"])
+        with self.assertRaisesRegex(ValueError,"Out-of-training-range"):
+            student.predict_or_abstain(far,robot="dual_ur5e")
+        restored=UnifiedStudent.from_dict(student.to_dict())
+        self.assertEqual(restored.coverage(far,robot="dual_ur5e"),risk)
+
     def test_reject_train_test_leakage(self):
         items=records()
         x=items[0]
