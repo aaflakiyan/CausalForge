@@ -1,0 +1,39 @@
+name: Authentic learned PushT policy comparison — ACT versus VQ-BeT
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  real-learned:
+    runs-on: ubuntu-latest
+    timeout-minutes: 28
+    env:
+      HF_HUB_DISABLE_TELEMETRY: "1"
+      TOKENIZERS_PARALLELISM: "false"
+      SDL_VIDEODRIVER: dummy
+      OMP_NUM_THREADS: "2"
+      OPENBLAS_NUM_THREADS: "2"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install LeRobot native simulator and policy models
+        run: |
+          python -m pip install -e .
+          python -m pip install 'lerobot[pusht]==0.4.4'
+      - name: Validate score handling
+        run: python -m unittest discover -s tests -p test_native_vla_benchmark.py -v
+      - name: Execute two trained external checkpoints on same PushT seed
+        run: |
+          python -m vla_council.causalforge.native_vla_benchmark \
+            --model aadarshram/act_pusht \
+            --model lerobot/vqbet_pusht \
+            --episodes 1 --seed 42 --timeout 500 \
+            --out runs/act-vqbet-native
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: authentic-act-vqbet-pusht
+          path: runs/act-vqbet-native/
+          retention-days: 14

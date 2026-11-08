@@ -1,0 +1,40 @@
+name: Real Hugging Face VLA checkpoint action-space preflight
+on:
+  push:
+    branches: [main, feature/real-vla-pusht-evaluation]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  real-checkpoint-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: |
+          python -m pip install -e .
+          python -m pip install 'huggingface_hub>=0.30,<2'
+      - name: Reject model output formats incompatible with UR5e
+        run: |
+          python -m unittest discover -s tests -p test_hf_checkpoint_preflight.py -v
+          python -m vla_council.causalforge.hf_checkpoint_preflight \
+            --model n3puiol/smolvla_pusht \
+            --model aadarshram/act_pusht \
+            --out runs/real-hf-action-contract.json
+          python - <<'PY'
+          import json
+          r=json.load(open("runs/real-hf-action-contract.json"))
+          assert len(r["models"])==2
+          assert all(not x["direct_ur5e_compatible"] for x in r["models"].values())
+          assert all(len(x["checkpoint_commit"])>=40 for x in r["models"].values())
+          print("REAL checked checkpoint config revisions; unsafe UR5e conversion refused")
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: real-pretrained-vla-action-preflight
+          path: runs/real-hf-action-contract.json
