@@ -41,6 +41,18 @@ The student–IK paired difference is **−0.13 mm** on average (student minus I
 
 The two teachers here were **scripted controllers, not pretrained VLAs**. The trained student is a simple linear shared-encoder/action-head baseline, not a multimodal foundation model.
 
+## Matched student-versus-IK communication latency (completed)
+
+An additional audit trained **one** ridge-regression student on eight measured training goal pairs (seed 42) and tested it on four held-out goals. Both student and reference IK followed the same actual MuJoCo physics and exact command-delay conditions.
+
+| Fixed setpoint delay | Student mean error | Reference IK mean error | Student successes | IK successes |
+| --- | ---: | ---: | ---: | ---: |
+| 0 ms | 20.09 mm | 21.25 mm | 4/4 | 4/4 |
+| 100 ms | 32.58 mm | 33.68 mm | 4/4 | 4/4 |
+| 200 ms | 51.36 mm | 52.33 mm | 4/4 | 4/4 |
+
+No arm–arm or arm–table contacts were recorded in these 24 paired policy-condition trials. The differences between policies are small, with only four independent test goals; **this is not evidence that the student is more robust or accurate in general**. Both degrade under delay.
+
 ## Reproduce
 
 ```bash
