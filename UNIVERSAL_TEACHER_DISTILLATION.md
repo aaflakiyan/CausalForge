@@ -34,6 +34,28 @@ CausalForge therefore separates:
 
 **The original source action stream is retained in full**, along with teacher identity, architecture, checkpoint identifier, observation digest, dataset split, action specification and measured outcome. It is never silently converted into an incompatible common motor vector.
 
+### Shared observations without discarding missing sensors
+
+`SemanticMapper` provides a strict, named vocabulary of task measurements. For example, a humanoid with a force sensor and a UR5e without that sensor can share a goal-position representation while preserving a **presence mask** that distinguishes a missing force measurement from a genuine measurement of zero.
+
+```python
+import causalforge
+
+schema = causalforge.SemanticMapper((
+    causalforge.Feature("goal_x", "m", "world", required=True),
+    causalforge.Feature("normal_force", "N", "tool", required=False),
+))
+sample = schema.encode({
+    "goal_x": causalforge.ScalarObservation(.25, "m", "world", 1.0, "sim"),
+})
+# sample["task_features"] == (0.25, 0.0, 1.0, 0.0)
+# value and availability bits stay together
+```
+
+The mapper rejects wrong physical units, frames and sensor timestamp skew. Unknown scalar measurements remain in `unmapped_observations`, while images, videos, text, depth and other native modalities can be stored as checksum-addressed `ModalityRef` entries for later model-specific encoders.
+
+This makes missing modalities explicit, but **does not automatically encode arbitrary images or map humanoid torques into UR5e joint commands**. Those require trained, tested encoders and robot-specific control mappings.
+
 ## Actual implemented interfaces
 
 | Component | What it does | Limits |
