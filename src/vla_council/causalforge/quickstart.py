@@ -123,6 +123,14 @@ def main(argv: list[str] | None = None) -> int:
     distill.add_argument("--out",type=Path,default=Path("runs/universal-student"))
     distill.add_argument("--episodes",type=int,default=80)
     distill.add_argument("--seed",type=int,default=42)
+    native = sub.add_parser(
+        "eval-pretrained",
+        help="Run REAL pre-trained SmolVLA versus ACT in their native PushT simulator"
+    )
+    native.add_argument("--episodes",type=int,default=2)
+    native.add_argument("--seed",type=int,default=42)
+    native.add_argument("--out",type=Path,default=Path("runs/real-checkpoint-pusht"))
+    native.add_argument("--timeout",type=int,default=1200)
     args = parser.parse_args(argv)
     if args.command == "demo":
         from .dual_ur5e_policy import BuiltinReachPolicy,evaluate
@@ -164,6 +172,20 @@ def main(argv: list[str] | None = None) -> int:
             print(f"  {robot}: held-out teacher-label MSE {score['mean_mse']:.6f}")
         print(f"  Saved: {args.out/'student.json'}")
         print(f"  Evidence: {args.out/'report.json'}")
+        return 0
+    if args.command == "eval-pretrained":
+        from .native_vla_benchmark import evaluate_native, DEFAULT_MODELS
+        result = evaluate_native(
+            models=DEFAULT_MODELS,episodes=args.episodes,seed=args.seed,
+            out=args.out,timeout_s=args.timeout)
+        print("REAL checkpoint native PushT comparison (not UR5e MuJoCo)")
+        for model,row in result["policies"].items():
+            print(f"  {model}: "
+                  + (f"{row['pc_success']:.1f}% success; mean overlap {row['avg_max_reward']:.3f}"
+                     if row["completed"] else f"FAILED: {row.get('error','unknown')}"))
+        print(f"  Evidence: {args.out/'comparison.json'}")
+        if not result["all_models_ran"]:
+            raise SystemExit("A native checkpoint failed. Review evidence; no fake score substituted.")
         return 0
     return 2
 
