@@ -31,10 +31,16 @@ jobs:
         run: |
           python -m vla_council.causalforge.crossseed_audit --menagerie third_party/mujoco_menagerie --out runs/crossseed --seeds 41 42 43 --train 8 --test 4
           python -c 'import json; r=json.load(open("runs/crossseed/aggregate-report.json")); assert r["total_held_out_goals"]==12 and len(r["per_seed"])==3'
+      - name: Train one student and check physical latency generalisation
+        run: |
+          python -m unittest discover -s tests -p 'test_student_latency_audit.py' -v
+          python -m vla_council.causalforge.student_latency_audit --menagerie third_party/mujoco_menagerie --out runs/student-latency --seed 42 --train 8 --test 4 --delay-ticks 0 5 10
+          python -c 'import json; d=json.load(open("runs/student-latency/stress-report.json")); assert len(d["trials"])==24 and not d["pretrained_vla"]'
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: multi-seed-physical-student-validation
           path: |
             runs/crossseed/
+            runs/student-latency/
             robot-model-revision.txt
