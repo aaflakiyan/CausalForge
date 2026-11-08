@@ -52,6 +52,18 @@ For a more meaningful physics check, [the real MuJoCo teacher-student experiment
 
 [Read the universal teacher mapping, Cosmos reasoning and validation guide](UNIVERSAL_TEACHER_DISTILLATION.md).
 
+## Measured MuJoCo robustness and reproducibility audit
+
+The [latest dual-UR5e robustness audit](MUJOCO_ROBUSTNESS_AUDIT.md) runs an official pinned MuJoCo model through actual dynamics with 20 ms controller ticks and measured transport delays; it also evaluates separately trained students across multiple independent train/test seeds.
+
+| Experiment | Actual measured result |
+| --- | --- |
+| 48 paired UR5e reach trials (0, 40, 100, 200 ms command delay) | Mean goal error grows from **20.48 mm** at 0 ms to **51.72 mm** at 200 ms |
+| Three student-training seeds, 12 held-out goals | Student **12/12** successes, **20.85 mm** error; reference IK **12/12**, **20.98 mm** |
+| Conservative feature coverage on held-out goals | Only **4/12** declared within training bounds |
+
+The student has **not** demonstrated superiority over IK: the paired uncertainty interval includes zero. Teachers are scripted rather than pretrained VLAs; no general manipulation or collision-avoidance claim is made. The workflows save full JSON reports and upstream model revision information.
+
 ## At a glance
 
 Can disagreements between robot policies become **targeted physical experiments** that generate better training examples for a smaller student policy?
