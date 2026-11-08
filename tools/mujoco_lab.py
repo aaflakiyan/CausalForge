@@ -118,20 +118,21 @@ def do_view(root: Path, *, duration: float = 3.0, repeat: bool = False) -> None:
     print("Opening MuJoCo viewer. Close the window to exit.")
     with mujoco.viewer.launch_passive(model, data) as viewer:
         while viewer.is_running():
-            data = reset(model)
-            # Passive viewers hold a reference to data. Reset the same
-            # instance instead of creating a new MjData.
-            mujoco.mj_resetData(model, viewer.data)
-            viewer.data.qpos[q] = data.qpos[q]
-            viewer.data.ctrl[actuator] = data.ctrl[actuator]
-            mujoco.mj_forward(model, viewer.data)
+            # Keep the exact MjData instance handed to launch_passive.
+            # Reset its state in-place; never swap in a different MjData.
+            mujoco.mj_resetData(model, data)
+            from vla_council.causalforge.dual_ur5e import HOME
+            for side in range(2):
+                data.qpos[q[side]] = HOME
+                data.ctrl[actuator[side]] = HOME
+            mujoco.mj_forward(model, data)
             for cmd in actions:
                 if not viewer.is_running():
                     return
                 t0=time.monotonic()
-                viewer.data.ctrl[actuator.ravel()] = cmd
+                data.ctrl[actuator.ravel()] = cmd
                 for _ in range(substeps):
-                    mujoco.mj_step(model, viewer.data)
+                    mujoco.mj_step(model, data)
                 viewer.sync()
                 time.sleep(max(0., DT - (time.monotonic() - t0)))
             if not repeat:
