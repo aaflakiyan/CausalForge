@@ -65,9 +65,12 @@ def run(menagerie:Path,out:Path,*,seed=42,train=10,test=4):
             outcome=evaluate(FixedChunkPolicy(chunk),menagerie=menagerie,goals=goal)
             teacher_scores[name].append(dict(
                 episode=episode,mean_goal_error_m=float(np.mean(outcome["tool_error_m"])),
-                success=outcome["task_success"]))
-            safe=(outcome["inter_arm_contact_steps"]==0 and outcome["table_contact_steps"]==0
-                  and outcome["task_success"])
+                success=outcome["task_success"],
+                contact_free=(outcome["inter_arm_contact_steps"]==0 and outcome["table_contact_steps"]==0)))
+            # A controller can fail its task without making physical contact.
+            # Keep the provisional contact-based safety label separate from
+            # success; selection uses measured loss among contact-free teachers.
+            safe=(outcome["inter_arm_contact_steps"]==0 and outcome["table_contact_steps"]==0)
             loss=float(np.mean(outcome["tool_error_m"]))
             records.append(TeacherEvidence(
                 episode_id=f"mujoco-{episode:04d}",
