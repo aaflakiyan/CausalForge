@@ -45,6 +45,7 @@ def audit(menagerie: Path, *, seeds=(41, 42, 43), goals_per_seed=4,
                     arm_contact_steps=report["inter_arm_contact_steps"],
                     table_contact_steps=report["table_contact_steps"],
                     max_tracking_error_rad=report["max_joint_tracking_error_rad"],
+                    minimum_tool_site_separation_m=report["minimum_tool_site_separation_m"],
                     action_samples=report["actions_checked_before_execution"],
                 ))
     summary={}
@@ -57,6 +58,7 @@ def audit(menagerie: Path, *, seeds=(41, 42, 43), goals_per_seed=4,
             task_success_rate=float(np.mean([x["success"] for x in v])),
             arm_contact_steps=sum(x["arm_contact_steps"] for x in v),
             table_contact_steps=sum(x["table_contact_steps"] for x in v),
+            minimum_tool_site_separation_m=float(min(x["minimum_tool_site_separation_m"] for x in v)),
         )
     result=dict(
         experiment="measured_UR5e_position_command_transport_delay",
