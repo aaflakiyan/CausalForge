@@ -19,6 +19,18 @@ class UR5eStudentTests(unittest.TestCase):
             self.assertTrue((path/"student.json").is_file())
             records=load_evidence(path/"mujoco_teacher_evidence.jsonl")
             self.assertEqual(len(records),16)
+            # Physically contact-free but task-incomplete is not the same
+            # as a dangerous controller. Labels must remain independent.
+            failed_but_contact_free=[
+                row for row in records
+                if row.teacher=="underreach_teacher"
+                and row.safe
+            ]
+            self.assertTrue(failed_but_contact_free)
+            self.assertTrue(any(
+                not episode["success"] and episode["contact_free"]
+                for episode in result["teacher_results"]["underreach_teacher"]
+            ))
             model=UnifiedStudent.from_dict(json.loads((path/"student.json").read_text()))
             self.assertIn("menagerie_dual_ur5e",model.heads)
             self.assertTrue(all(s["arm_contacts"]==0 and s["table_contacts"]==0
