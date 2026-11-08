@@ -152,6 +152,7 @@ def evaluate(
     arm_contacts = 0
     table_contacts = 0
     max_tracking = 0.
+    min_tool_separation_m = float(np.linalg.norm(initial_tool[0]-initial_tool[1]))
     import mujoco
     for index, command in enumerate(commands):
         # Simulate held position setpoints during a measured communication delay.
@@ -164,6 +165,8 @@ def evaluate(
             inter, table = contacts(model,data)
             arm_contacts += bool(inter)
             table_contacts += bool(table)
+            min_tool_separation_m = min(min_tool_separation_m,
+                float(np.linalg.norm(data.site_xpos[sites[0]]-data.site_xpos[sites[1]])))
         max_tracking = max(max_tracking, float(np.max(np.abs(data.qpos[q].ravel() - applied))))
         if record_trace:
             trace.append({
@@ -195,6 +198,7 @@ def evaluate(
         "tool_displacement_m":np.linalg.norm(measured-initial_tool,axis=1).tolist(),
         "tool_error_m":err.tolist(),
         "inter_arm_contact_steps":arm_contacts,
+        "minimum_tool_site_separation_m":min_tool_separation_m,
         "table_contact_steps":table_contacts,
         "max_joint_tracking_error_rad":max_tracking,
         "task_success": bool(np.all(err < .07) and arm_contacts==0 and table_contacts==0),
