@@ -1,0 +1,111 @@
+name: Build complete downloadable MuJoCo UR5e lab
+on:
+  push:
+    branches: [main, feature/downloadable-mujoco-lab]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build-tested-kit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      MUJOCO_GL: osmesa
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install actual physics and offscreen rendering
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y libosmesa6 libosmesa6-dev
+          python -m pip install -e '.[mujoco]' 'imageio>=2.34' pillow
+      - name: Download official pinned UR5e XML and all meshes
+        run: |
+          git clone --depth 1 --filter=blob:none --sparse https://github.com/google-deepmind/mujoco_menagerie.git third_party/mujoco_menagerie
+          git -C third_party/mujoco_menagerie fetch --depth 1 origin 98a70c569c4c1b6da467a20012f766ee1f8dc521
+          git -C third_party/mujoco_menagerie checkout FETCH_HEAD
+          git -C third_party/mujoco_menagerie sparse-checkout set universal_robots_ur5e
+          test -f third_party/mujoco_menagerie/universal_robots_ur5e/ur5e.xml
+          git -C third_party/mujoco_menagerie rev-parse HEAD
+      - name: Run assembled 12-DOF MuJoCo physics and save HTML report
+        run: |
+          python tools/mujoco_lab.py check --menagerie third_party/mujoco_menagerie --out lab-output
+      - name: Render verified 3D action sequence to real GIF
+        run: |
+          python tools/mujoco_lab.py render --menagerie third_party/mujoco_menagerie --out lab-output
+          test -s lab-output/render/dual_ur5e_reach.gif
+      - name: Exercise physical latency and student training
+        run: |
+          python tools/mujoco_lab.py stress --menagerie third_party/mujoco_menagerie --out lab-output
+          python tools/mujoco_lab.py student --menagerie third_party/mujoco_menagerie --out lab-output
+      - name: Run fail-closed policy and actual robot tests
+        run: |
+          python tools/mujoco_lab.py tests --menagerie third_party/mujoco_menagerie --out lab-output
+      - name: Assemble complete portable source + model package
+        run: |
+          mkdir -p dist/CausalForge-MuJoCo-Lab/CausalForge
+          rsync -a --exclude .git --exclude dist --exclude lab-output --exclude third_party \
+            --exclude __pycache__ --exclude .pytest_cache --exclude '*.egg-info' \
+            ./ dist/CausalForge-MuJoCo-Lab/CausalForge/
+          mkdir -p dist/CausalForge-MuJoCo-Lab/mujoco_menagerie
+          cp -a third_party/mujoco_menagerie/universal_robots_ur5e \
+            dist/CausalForge-MuJoCo-Lab/mujoco_menagerie/
+          if test -f third_party/mujoco_menagerie/LICENSE; then
+            cp third_party/mujoco_menagerie/LICENSE dist/CausalForge-MuJoCo-Lab/mujoco_menagerie/
+          fi
+          cp tools/mujoco_release/RUN_ME_FIRST.md dist/CausalForge-MuJoCo-Lab/
+          cp tools/mujoco_release/run.sh tools/mujoco_release/run.ps1 dist/CausalForge-MuJoCo-Lab/
+          chmod +x dist/CausalForge-MuJoCo-Lab/run.sh
+          cp -a lab-output dist/CausalForge-MuJoCo-Lab/examples
+          python - <<'PY'
+          import json, subprocess, hashlib
+          from pathlib import Path
+          root = Path('dist/CausalForge-MuJoCo-Lab')
+          scene = root/'CausalForge/assets/mujoco/dual_ur5e_reach_arena.xml'
+          robot = root/'mujoco_menagerie/universal_robots_ur5e/ur5e.xml'
+          files = [p for p in root.rglob('*') if p.is_file()]
+          result = {
+            "source_commit": subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),
+            "robot_model_repo": "https://github.com/google-deepmind/mujoco_menagerie",
+            "robot_revision": subprocess.check_output(
+                ['git','-C','third_party/mujoco_menagerie','rev-parse','HEAD'],text=True).strip(),
+            "physics_framework": "MuJoCo",
+            "included_file_count": len(files),
+            "scene_sha256": hashlib.sha256(scene.read_bytes()).hexdigest(),
+            "robot_xml_sha256": hashlib.sha256(robot.read_bytes()).hexdigest(),
+            "external_pretrained_vla_weights_included": False,
+          }
+          (root/'BUILD_MANIFEST.json').write_text(json.dumps(result,indent=2)+'\n')
+          print(json.dumps(result,indent=2))
+          PY
+          cd dist
+          zip -q -r -9 CausalForge-MuJoCo-Lab.zip CausalForge-MuJoCo-Lab/
+          test -s CausalForge-MuJoCo-Lab.zip
+      - name: Test extracted archive independently
+        run: |
+          mkdir -p /tmp/cf-kit-extracted
+          unzip -q dist/CausalForge-MuJoCo-Lab.zip -d /tmp/cf-kit-extracted
+          cd /tmp/cf-kit-extracted/CausalForge-MuJoCo-Lab
+          test -f mujoco_menagerie/universal_robots_ur5e/ur5e.xml
+          test -f CausalForge/assets/mujoco/dual_ur5e_reach_arena.xml
+          python CausalForge/tools/mujoco_lab.py check --out extracted-verification
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          report=json.loads(Path('extracted-verification/reach/metrics.json').read_text())
+          assert report['task_success']
+          assert report['actions_checked_before_execution']==150
+          assert report['inter_arm_contact_steps']==0
+          assert report['table_contact_steps']==0
+          assert Path('examples/render/dual_ur5e_reach.gif').stat().st_size > 10000
+          print('Extracted offline model bundle: validated real MuJoCo execution OK')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: CausalForge-MuJoCo-Lab-complete
+          path: dist/CausalForge-MuJoCo-Lab.zip
+          retention-days: 30
