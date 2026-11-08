@@ -31,4 +31,5 @@ __all__ = [
     "TeacherEvidence", "UnifiedStudent", "save_evidence", "load_evidence",
     "PhysicalFact", "ReasoningGate", "Cosmos3ReasonerClient",
     "disagreement_curriculum",
+    "Feature", "ScalarObservation", "ModalityRef", "SemanticMapper",
 ]
