@@ -15,6 +15,9 @@ from vla_council.causalforge.physical_reasoning import (
     PhysicalFact, ReasoningGate, Cosmos3ReasonerClient,
 )
 from vla_council.causalforge.curriculum import disagreement_curriculum
+from vla_council.causalforge.semantic_mapper import (
+    Feature, ScalarObservation, ModalityRef, SemanticMapper,
+)
 from vla_council.causalforge.vla_bridge import (
     ExplicitActionMapping, VLABackend, SingleArmMapping,
     DualArmComposer, evaluate_teachers,
