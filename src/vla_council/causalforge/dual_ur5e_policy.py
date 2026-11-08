@@ -104,12 +104,15 @@ def evaluate(
     include_rgb: bool = False,
     image_width: int = 320,
     image_height: int = 240,
+    command_delay_ticks: int = 0,
 ) -> dict:
     """Evaluate a joint-position policy on verified MuJoCo dual-arm reaching.
 
     Policy outputs are validated in full before stepping. No conversion or clipping
     is silently performed. Controls are held for exact integer physics steps.
     """
+    if type(command_delay_ticks) is not int or not (0 <= command_delay_ticks <= 25):
+        raise ValueError("Command delay must be an integer number of 20 ms ticks in [0,25]")
     if robot != "ur5e-dual" or task != "reach":
         raise ValueError("Only robot='ur5e-dual', task='reach' is implemented")
     model = load_reach_model(Path(menagerie))
@@ -151,18 +154,23 @@ def evaluate(
     max_tracking = 0.
     import mujoco
     for index, command in enumerate(commands):
-        data.ctrl[ctrl.ravel()] = command
+        # Simulate held position setpoints during a measured communication delay.
+        # This is transport-command latency, NOT a simulated actuator/torque fault.
+        applied = (home_q.ravel() if index < command_delay_ticks
+                   else commands[index - command_delay_ticks])
+        data.ctrl[ctrl.ravel()] = applied
         for _ in range(substeps):
             mujoco.mj_step(model,data)
             inter, table = contacts(model,data)
             arm_contacts += bool(inter)
             table_contacts += bool(table)
-        max_tracking = max(max_tracking, float(np.max(np.abs(data.qpos[q].ravel() - command))))
+        max_tracking = max(max_tracking, float(np.max(np.abs(data.qpos[q].ravel() - applied))))
         if record_trace:
             trace.append({
                 "time_s": float(data.time),
                 "q_rad": data.qpos[q].tolist(),
                 "command_rad": command.tolist(),
+                "applied_command_rad": np.asarray(applied).tolist(),
                 "eef_xyz_m": data.site_xpos[sites].tolist(),
             })
     measured = data.site_xpos[sites].copy()
@@ -178,6 +186,8 @@ def evaluate(
         },
         "actions_checked_before_execution":int(len(commands)),
         "physics_substeps_per_action":substeps,
+        "command_delay_ticks":command_delay_ticks,
+        "command_delay_s":command_delay_ticks*DT,
         "duration_s":float(data.time),
         "initial_tool_xyz_m":initial_tool.tolist(),
         "final_tool_xyz_m":measured.tolist(),
