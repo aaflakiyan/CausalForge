@@ -64,6 +64,38 @@ The [latest dual-UR5e robustness audit](MUJOCO_ROBUSTNESS_AUDIT.md) runs an offi
 
 The student has **not** demonstrated superiority over IK: the paired uncertainty interval includes zero. Teachers are scripted rather than pretrained VLAs; no general manipulation or collision-avoidance claim is made. The workflows save full JSON reports and upstream model revision information.
 
+## Download the complete MuJoCo dual-UR5e simulation lab
+
+You can now download a **fully packaged dual-UR5e MuJoCo lab** containing the actual official Menagerie robot XML/meshes, the CausalForge source, the assembled scene, Windows and Linux launcher scripts, real rendered GIF and the physical validation results.
+
+Use the [Build complete downloadable MuJoCo UR5e lab](https://github.com/aaflakiyan/CausalForge/actions/workflows/mujoco-lab-release.yml) GitHub Actions workflow. Download its artifact **CausalForge-MuJoCo-Lab-complete**, unzip the contained `CausalForge-MuJoCo-Lab.zip`, and follow the included `RUN_ME_FIRST.md`.
+
+Inside the extracted kit:
+
+```powershell
+# Windows PowerShell — installs Python requirements on first run
+.\run.ps1 check
+.\run.ps1 view
+.\run.ps1 render
+.\run.ps1 tests
+.\run.ps1 stress --full
+```
+
+```bash
+# Linux — installs Python requirements on first run
+bash run.sh check
+bash run.sh view
+MUJOCO_GL=osmesa bash run.sh render
+bash run.sh tests
+bash run.sh stress --full
+```
+
+These commands load and run **genuine MuJoCo rigid-body simulation** of two UR5e robots. An example GIF and HTML/JSON physical reports are shipped with the kit, so the developer can inspect a known-good result before running anything. The source and model assets are bundled; Python/MuJoCo dependencies are installed for the user's operating system on first use.
+
+The package is automatically **extracted and tested as a fresh independent download in CI**, rather than merely checking the same source checkout that built it. This lab covers scripted/learned-controller integration and MuJoCo verification; it does not contain real pretrained GR00T/π₀ model weights.
+
+[Full lab commands and implementation](tools/mujoco_release/RUN_ME_FIRST.md) · [MuJoCo lab launcher source](tools/mujoco_lab.py)
+
 ## At a glance
 
 Can disagreements between robot policies become **targeted physical experiments** that generate better training examples for a smaller student policy?
