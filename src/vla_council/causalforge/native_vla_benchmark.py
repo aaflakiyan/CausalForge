@@ -25,6 +25,7 @@ SUPPORTED = {
     "aadarshram/act_pusht": "ACT action-chunking imitation baseline",
     "lerobot/diffusion_pusht": "Diffusion Policy imitation baseline",
     "lerobot/vqbet_pusht": "VQ-BeT latent action imitation baseline",
+    "DanqingZ/diffusion_pusht": "Diffusion Policy pretrained imitation baseline with processor metadata",
 }
 
 def parse_native_info(info:dict, n_episodes:int)->dict:
