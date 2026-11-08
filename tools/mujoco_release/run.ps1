@@ -11,6 +11,7 @@ if (-not (Test-Path ".venv\Scripts\python.exe")) {
     if ($LASTEXITCODE -ne 0) { throw "pip upgrade failed" }
     & ".venv\Scripts\python.exe" -m pip install -e ".\CausalForge[mujoco]" "imageio>=2.34" pillow
     if ($LASTEXITCODE -ne 0) { throw "Dependency installation failed" }
+    New-Item ".venv\\.ready" -ItemType File -Force | Out-Null
 }
 & ".venv\Scripts\python.exe" "CausalForge\tools\mujoco_lab.py" $Command @MoreArgs
 exit $LASTEXITCODE
