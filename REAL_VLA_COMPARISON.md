@@ -19,8 +19,10 @@ The first experimental CI run used **Python 3.11, LeRobot 0.4.4, CPU, PushT seed
 | Model | Checkpoint loaded and evaluated? | Actual PushT metric or blocker |
 | --- | --- | --- |
 | `aadarshram/act_pusht` | **Yes** | 42.34% maximum shape overlap, **0/1** task success. Native episode video and `eval_info.json` are archived. |
-| `n3puiol/smolvla_pusht` | **No** | Model repository lacks required `policy_preprocessor.json`; LeRobot 0.4.4 refused checkpoint evaluation. **No result** is reported. |
+| `n3puiol/smolvla_pusht` | **Yes, with LeRobot 0.3.3** | In an independently reproduced historical runtime: **5.98% maximum target overlap, 0/1 successes**, seed 42; native video and `eval_info.json` saved. LeRobot 0.4.4 still refuses the older checkpoint because `policy_preprocessor.json` is missing. |
 | `lerobot/vqbet_pusht` | **No** | Older checkpoint config contains `mlp_hidden_dim`, which the current `VQBeTConfig` parser rejects. **No result** is reported. |
+
+A subsequent historical-runtime test **successfully executed the genuine SmolVLA checkpoint under LeRobot 0.3.3**, including an actual PushT episode and recorded video. The SmolVLA and ACT runs are on the same seeded PushT task, but came from different LeRobot versions, so direct architectural comparisons are still preliminary. Neither achieved a successful episode in the first single-seed trial.
 
 The native checkpoint experiment exposed real third-party model-version incompatibilities. These are **not** evidence that SmolVLA or VQ-BeT perform poorly at the underlying manipulation task.
 
