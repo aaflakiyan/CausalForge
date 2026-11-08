@@ -127,6 +127,8 @@ def main(argv: list[str] | None = None) -> int:
         "eval-pretrained",
         help="Run REAL pre-trained SmolVLA versus ACT in their native PushT simulator"
     )
+    native.add_argument("--model",action="append",dest="models",
+                        help="Repeat for reviewed model IDs (SmolVLA, ACT, VQ-BeT, diffusion)")
     native.add_argument("--episodes",type=int,default=2)
     native.add_argument("--seed",type=int,default=42)
     native.add_argument("--out",type=Path,default=Path("runs/real-checkpoint-pusht"))
@@ -176,7 +178,7 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "eval-pretrained":
         from .native_vla_benchmark import evaluate_native, DEFAULT_MODELS
         result = evaluate_native(
-            models=DEFAULT_MODELS,episodes=args.episodes,seed=args.seed,
+            models=args.models or DEFAULT_MODELS,episodes=args.episodes,seed=args.seed,
             out=args.out,timeout_s=args.timeout)
         print("REAL checkpoint native PushT comparison (not UR5e MuJoCo)")
         for model,row in result["policies"].items():
