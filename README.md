@@ -96,6 +96,22 @@ The package is automatically **extracted and tested as a fresh independent downl
 
 [Full lab commands and implementation](tools/mujoco_release/RUN_ME_FIRST.md) · [MuJoCo lab launcher source](tools/mujoco_lab.py)
 
+## Actual pretrained checkpoints: native evaluation and strict robot compatibility
+
+CausalForge can now invoke **real externally trained policy weights** through the native [LeRobot PushT benchmark runner](REAL_VLA_COMPARISON.md), alongside its separate UR5e MuJoCo tests.
+
+```bash
+pip install -e .
+pip install 'lerobot[smolvla,pusht]==0.4.4'
+causalforge eval-pretrained --model aadarshram/act_pusht --episodes 1
+```
+
+In the first actual CPU-run PushT episode (seed 42), **ACT loaded and executed** and achieved **0.4234 maximum target overlap, 0/1 successes**. The replay video, raw `eval_info.json` and unedited evaluator log are archived in GitHub Actions. A SmolVLA attempt **did not run** because its original checkpoint lacks the required preprocessor file. Another VQ-BeT attempt failed at an incompatible historical config field. Those failures are explicitly recorded, not replaced with fabricated performance numbers.
+
+The [real-checkpoint action-space preflight](.github/workflows/real-vla-preflight.yml) also inspected published model configuration revisions: both native PushT policies have **two-dimensional** action spaces, so **neither can be safely passed straight to a dual-UR5e 12-joint controller**. Integrating them in the UR5e MuJoCo task requires task/embodiment-specific post-training and explicit validated action mapping.
+
+**Do not compare native PushT task overlap with MuJoCo UR5e tool-position errors**; these are separate tasks with different physics engines and metrics. Full reproducibility commands, checkpoint logs and results: [REAL_VLA_COMPARISON.md](REAL_VLA_COMPARISON.md).
+
 ## At a glance
 
 Can disagreements between robot policies become **targeted physical experiments** that generate better training examples for a smaller student policy?
