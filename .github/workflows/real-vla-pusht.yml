@@ -1,8 +1,5 @@
 name: Authentic pretrained VLA evaluation — SmolVLA vs ACT on PushT
 on:
-  push:
-    branches: [feature/real-vla-pusht-evaluation]
-  pull_request:
   workflow_dispatch:
 permissions:
   contents: read
