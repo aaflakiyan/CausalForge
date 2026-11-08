@@ -24,6 +24,7 @@ jobs:
           python -m unittest discover -s tests -p 'test_universal_teacher.py' -v
           python -m unittest discover -s tests -p 'test_physical_reasoning.py' -v
           python -m unittest discover -s tests -p 'test_curriculum.py' -v
+          python -m unittest discover -s tests -p 'test_semantic_mapper.py' -v
           python -m unittest discover -s tests -p 'test_universal_demo.py' -v
           python -m vla_council.causalforge.universal_demo --out runs/universal-student --episodes 36
           python -c 'import json; d=json.load(open("runs/universal-student/report.json")); assert not d["checkpoint_inference"] and len(d["embodiments"])==2'
