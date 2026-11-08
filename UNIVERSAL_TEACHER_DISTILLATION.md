@@ -85,6 +85,23 @@ python -m vla_council.causalforge.ur5e_teacher_student \
 
 This samples nearby, independently specified 3D dual-arm targets, executes two **scripted** joint-target teachers in MuJoCo, measures each one's actual reaching error and contacts, selects training labels from observed-safe candidates, trains the student, then evaluates the student's own joint targets under fresh MuJoCo physics on four unseen goals. Real results and student weights are archived as CI artefacts. No test outcome is available to the training label selector.
 
+### First actual MuJoCo learning result
+
+The initial, pinned-model GitHub Actions run used ten training goal pairs and four held-out goal pairs. The student was physically executed under MuJoCo for every held-out goal.
+
+| Held-out result | Value |
+| --- | ---: |
+| Student reach success | **4 / 4** |
+| Mean student tool error | **19.74 mm** |
+| Mean original IK teacher tool error | **19.17 mm** |
+| Mean biased (underreaching) teacher tool error | **198.67 mm** |
+| Student arm–arm / arm–table contact frames | **0 / 0** |
+| Student action MSE versus outcome-selected teacher | **4.64 × 10⁻⁶ rad²** |
+
+These are small nearby-reaching tests with scripted policies; the student **did not outperform the best teacher**. The run proves the code trains a student, serialises it, reloads it, and executes its action predictions on new goals. It does not prove cross-embodiment transfer or pretrained VLA competence.
+
+The trained student additionally has a conservative feature-range check. `student.coverage(...)` recommends an external specialist or new physical probe on out-of-training-range inputs; `predict_or_abstain(...)` raises instead of issuing a command. This is **not** a calibrated confidence or physical safety guarantee.
+
 ## Cosmos 3 and structured physical reasoning
 
 NVIDIA's [Cosmos 3 platform](https://github.com/NVIDIA/cosmos) now provides unified reasoning and multimodal generation/action capabilities. It is a promising *external* component for proposing physical hypotheses, expected contact outcomes and diagnostic experiments, not an authority that can bypass robot safety.
