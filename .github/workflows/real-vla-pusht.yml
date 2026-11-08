@@ -1,0 +1,59 @@
+name: Authentic pretrained VLA evaluation — SmolVLA vs ACT on PushT
+on:
+  push:
+    branches: [feature/real-vla-pusht-evaluation]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  real-pretrained-cpu:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      HF_HUB_DISABLE_TELEMETRY: "1"
+      TOKENIZERS_PARALLELISM: "false"
+      SDL_VIDEODRIVER: dummy
+      OMP_NUM_THREADS: "2"
+      OPENBLAS_NUM_THREADS: "2"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install pinned LeRobot and real PushT physics environment
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e .
+          python -m pip install 'lerobot[smolvla,pusht]==0.4.4'
+          python -c 'import lerobot, gym_pusht, torch; print("torch",torch.__version__,"cuda",torch.cuda.is_available())'
+      - name: Verify comparison parser and fail-closed checkpoint rules
+        run: python -m unittest discover -s tests -p 'test_native_vla_benchmark.py' -v
+      - name: Load REAL checkpoints and evaluate each on matched PushT episode
+        continue-on-error: true
+        id: checkpoint_eval
+        run: |
+          python -m vla_council.causalforge.native_vla_benchmark \
+            --model n3puiol/smolvla_pusht \
+            --model aadarshram/act_pusht \
+            --episodes 1 --seed 42 --timeout 700 \
+            --out runs/authentic-pusht
+      - name: Record accurate completion status; don't report mock statistics
+        if: always()
+        run: |
+          if test -f runs/authentic-pusht/comparison.json; then
+            python - <<'PY'
+          import json
+          data=json.load(open('runs/authentic-pusht/comparison.json'))
+          print('ACTUAL WEIGHTS:',{k:v['checkpoint_inference'] for k,v in data['policies'].items()})
+          print('ALL MODELS COMPLETED:',data['all_models_ran'])
+          for model,x in data['policies'].items():
+              print(model,'RESULT:',x.get('pc_success'),'ERROR:',x.get('error'))
+          PY
+          fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: native-pretrained-smolvla-act-pusht
+          path: runs/authentic-pusht/
+          retention-days: 14
