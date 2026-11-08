@@ -1,5 +1,7 @@
 name: SmolVLA historical checkpoint compatibility — LeRobot 0.3.3
 on:
+  push:
+    branches: [feature/real-vla-pusht-evaluation]
   workflow_dispatch:
 permissions:
   contents: read
@@ -26,6 +28,7 @@ jobs:
         run: |
           python -m vla_council.causalforge.native_vla_benchmark \
             --model n3puiol/smolvla_pusht \
+            --model aadarshram/act_pusht \
             --episodes 1 --seed 42 --timeout 650 \
             --out runs/historical-smolvla
       - uses: actions/upload-artifact@v4
