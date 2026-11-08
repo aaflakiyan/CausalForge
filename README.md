@@ -37,6 +37,21 @@ The command runs three clearly labelled **mock provider interfaces**, converts a
 
 To connect your own loaded checkpoint, see [Multi-VLA integration, action mappings and limitations](MULTI_VLA_INTEGRATION.md). Every source must explicitly declare matching robot joints, units, frame, control mode and timestep. Missing joints, unknown representations and incompatible embodiment outputs are refused.
 
+## New: heterogeneous teacher distillation and physics reasoning
+
+CausalForge can now retain native outputs and provenance from different teacher architectures, train a **single multi-embodiment student artifact** with a shared task-feature encoder and robot-specific action heads, and identify high-disagreement examples for future probes. A structured reasoning gate also lets a separately served **NVIDIA Cosmos 3 Reasoner** suggest evidence-grounded physical hypotheses without taking control of robot actuators.
+
+```bash
+python -m pip install -e .
+causalforge distill-demo
+```
+
+This **CPU-only demo uses synthetic teachers**, not pretrained OpenPI/GR00T weights. It saves a native-evidence JSONL file, trained student JSON and held-out report in `runs/universal-student/`. Unfamiliar task features can trigger an explicit abstention rather than silent prediction.
+
+For a more meaningful physics check, [the real MuJoCo teacher-student experiment](UNIVERSAL_TEACHER_DISTILLATION.md) fits a student to measured scripted-controller outcomes and tests its own predictions on separate dual-UR5e goals. In the first 10-train/4-test run, the student completed 4/4 held-out reaches with mean tool error **19.74 mm**, compared with **19.17 mm** for the reference IK teacher. This validates the *pipeline*, not better performance than the teacher or universal VLA capability.
+
+[Read the universal teacher mapping, Cosmos reasoning and validation guide](UNIVERSAL_TEACHER_DISTILLATION.md).
+
 ## At a glance
 
 Can disagreements between robot policies become **targeted physical experiments** that generate better training examples for a smaller student policy?
