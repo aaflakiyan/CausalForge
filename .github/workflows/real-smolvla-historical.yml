@@ -1,7 +1,5 @@
 name: SmolVLA historical checkpoint compatibility — LeRobot 0.3.3
 on:
-  push:
-    branches: [feature/real-vla-pusht-evaluation]
   workflow_dispatch:
 permissions:
   contents: read
