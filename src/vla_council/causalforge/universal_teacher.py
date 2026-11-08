@@ -180,8 +180,30 @@ class UnifiedStudent:
             weights=np.linalg.solve(design.T@design+penalty+1e-10*np.eye(design.shape[1]),design.T@target)
             self.heads[robot]=dict(spec=train[indexes[0]].action.spec,
                   horizon=train[indexes[0]].action.actions.shape[0],weights=weights,
-                  training_examples=len(indexes))
+                  training_examples=len(indexes),
+                  feature_min=features[indexes].min(axis=0),
+                  feature_max=features[indexes].max(axis=0))
         return self
+
+    def coverage(self,features,*,robot):
+        """Conservative training-range flag, NOT calibrated policy confidence."""
+        if self.mean is None: raise RuntimeError("Untrained student")
+        if robot not in self.heads: raise ValueError("Unknown robot embodiment")
+        values=np.asarray(features,dtype=float)
+        if values.ndim!=1 or values.size!=len(self.mean) or not np.isfinite(values).all():
+            raise ValueError("Invalid task features")
+        head=self.heads[robot]
+        lower=np.asarray(head["feature_min"])
+        upper=np.asarray(head["feature_max"])
+        inside=bool(np.all(values>=lower-1e-12) and np.all(values<=upper+1e-12))
+        return dict(robot=robot,within_training_feature_ranges=inside,
+                    recommend_specialist_or_new_probe=not inside,
+                    warning="Feature range is only a crude OOD heuristic, never a safety or competence guarantee.")
+
+    def predict_or_abstain(self,features,*,robot):
+        if not self.coverage(features,robot=robot)["within_training_feature_ranges"]:
+            raise ValueError("Out-of-training-range task; request a new verified probe or specialist teacher")
+        return self.predict(features,robot=robot)
 
     def predict(self,features,*,robot):
         if self.mean is None: raise RuntimeError("Untrained student")
@@ -213,7 +235,9 @@ class UnifiedStudent:
           ridge=self.ridge,mean=self.mean.tolist(),scale=self.scale.tolist(),
           projection=self.projection.tolist(),
           heads={k:dict(spec=spec_to_dict(h["spec"]),horizon=h["horizon"],
-                  weights=h["weights"].tolist(),training_examples=h["training_examples"])
+                  weights=h["weights"].tolist(),training_examples=h["training_examples"],
+                  feature_min=np.asarray(h["feature_min"]).tolist(),
+                  feature_max=np.asarray(h["feature_max"]).tolist())
                  for k,h in self.heads.items()})
 
     @classmethod
@@ -236,8 +260,15 @@ class UnifiedStudent:
                weights.shape!=(result.projection.shape[1]+1,horizon*len(spec.ordered_axes))
                or not np.isfinite(weights).all()):
                 raise ValueError("Corrupt embodiment head")
+            lower=np.asarray(h["feature_min"],dtype=float)
+            upper=np.asarray(h["feature_max"],dtype=float)
+            if (lower.shape!=(len(result.mean),) or upper.shape!=lower.shape
+                or not np.isfinite(lower).all() or not np.isfinite(upper).all()
+                or np.any(lower>upper)):
+                raise ValueError("Corrupt student coverage bounds")
             result.heads[robot]=dict(spec=spec,weights=weights,horizon=horizon,
-                                     training_examples=h["training_examples"])
+                                     training_examples=h["training_examples"],
+                                     feature_min=lower,feature_max=upper)
         return result
 
 def evidence_digest(rows):
