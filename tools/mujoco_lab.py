@@ -16,6 +16,7 @@ import time
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent
+BUNDLE = ROOT.parent if (ROOT.parent / "mujoco_menagerie" / "universal_robots_ur5e" / "ur5e.xml").is_file() else ROOT
 # Work both inside a normal clone (ROOT/src) and in the downloadable offline
 # bundle (ROOT/CausalForge/src).
 SRC = ROOT / "src" if (ROOT / "src").is_dir() else ROOT / "CausalForge" / "src"
@@ -28,6 +29,7 @@ def menagerie_path(p: str | None) -> Path:
         result = Path(p).expanduser().resolve()
     else:
         choices = [
+            BUNDLE / "mujoco_menagerie",
             ROOT / "mujoco_menagerie",
             ROOT / "third_party" / "mujoco_menagerie",
             HERE.parent.parent / "third_party" / "mujoco_menagerie",
@@ -186,7 +188,7 @@ def main(argv=None) -> int:
     parser.add_argument("command", choices=("check","render","view","stress","student","tests","all"))
     parser.add_argument("--menagerie", type=str, default=None,
                         help="Folder containing official universal_robots_ur5e model")
-    parser.add_argument("--out", type=Path, default=ROOT / "results")
+    parser.add_argument("--out", type=Path, default=BUNDLE / "results")
     parser.add_argument("--duration", type=float, default=3.0)
     parser.add_argument("--repeat", action="store_true",
                         help="Loop physical motion inside interactive GUI viewer")
