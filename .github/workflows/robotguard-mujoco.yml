@@ -1,0 +1,50 @@
+name: RobotGuard MuJoCo physics replay
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'robotguard/**'
+      - '.github/workflows/robotguard-mujoco.yml'
+  pull_request:
+    paths:
+      - 'robotguard/**'
+      - '.github/workflows/robotguard-mujoco.yml'
+jobs:
+  real-physics:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install RobotGuard and actual MuJoCo physics engine
+        run: python -m pip install -e './robotguard[mujoco]'
+      - name: Run contract and real-physics tests
+        run: python -m unittest discover -s robotguard/tests -v
+      - name: Run packaged MuJoCo reproducibility example
+        run: robotguard mujoco-demo --out robotguard-ci-artifacts
+      - name: Verify claims are backed by simulation output
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          base = Path('robotguard-ci-artifacts')
+          simulated = json.loads((base / 'simulation.json').read_text())
+          rejected = json.loads((base / 'rejected.json').read_text())
+          assert simulated['status'] == 'SIMULATION_COMPLETED'
+          assert simulated['integration_steps'] > 100
+          assert simulated['preflight_status'] == 'PASS'
+          assert simulated['metrics']['observed_joint_limit_violations'] == 0
+          assert simulated['physical_safety_certified'] is False
+          assert rejected['status'] == 'FAIL'
+          assert (base / 'simulation.html').is_file()
+          print('MuJoCo replay and preflight-rejection reports verified')
+          PY
+      - name: Publish reproducible result files
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: robotguard-mujoco-reports
+          path: robotguard-ci-artifacts/
+          if-no-files-found: warn

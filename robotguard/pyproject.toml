@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "robotguard-preflight"
-version = "0.1.0"
+version = "0.2.0"
 description = "Pre-flight checks for AI-generated robot actions: units, limits, velocity, acceleration, and timing"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -18,3 +18,9 @@ robotguard = "robotguard.cli:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[project.optional-dependencies]
+mujoco = ["mujoco>=3.5,<4"]
+
+[tool.setuptools.package-data]
+robotguard = ["assets/*.xml", "assets/*.json", "assets/*.jsonl"]

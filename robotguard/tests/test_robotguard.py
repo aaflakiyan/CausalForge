@@ -85,6 +85,29 @@ class RobotGuardTests(unittest.TestCase):
         self.assertIn("&lt;script&gt;", markup)
         self.assertNotIn("<script>alert", markup)
 
+    def test_missing_spec_units_or_frame_fails_closed(self):
+        for missing in ("units", "frame"):
+            with self.subTest(missing=missing), self.assertRaises(ConfigurationError):
+                RobotSpec.from_dict({k: v for k, v in SPEC.items() if k != missing})
+
+    def test_extreme_values_fail_without_invalid_json(self):
+        huge = 10 ** 1000
+        bad = validate_trace(self.spec, [action(0, huge)])
+        self.assertIn("invalid_position", codes(bad))
+        import json
+        json.dumps(bad.as_dict(), allow_nan=False)
+        trace = [action(0, -1e308), action(1e-300, 1e308)]
+        bad = validate_trace(self.spec, trace)
+        self.assertIn("velocity_overflow", codes(bad))
+        json.dumps(bad.as_dict(), allow_nan=False)
+
+    def test_no_nonfinite_acceleration_in_reports(self):
+        spec = RobotSpec.from_dict({**SPEC, "max_velocity": [1e308, 1e308], "max_acceleration": [1e308, 1e308], "max_interval_s": 1.0})
+        trace = [action(0, 0), action(0.5, 1), action(0.5000000000000001, 1.000000001)]
+        result = validate_trace(spec, trace)
+        import json
+        json.dumps(result.as_dict(), allow_nan=False)
+
     def test_cli_exit_codes(self):
         with tempfile.TemporaryDirectory() as tmp:
             p = Path(tmp)

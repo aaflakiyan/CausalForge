@@ -4,10 +4,12 @@ from __future__ import annotations
 import argparse
 import json
 from pathlib import Path
+from importlib import resources
 import sys
 
 from .core import ConfigurationError, RobotSpec, validate_trace
 from .report import write_report
+from .simulation import SimulationError, simulate_trace, write_simulation
 
 
 def _load_jsonl(path: Path) -> list[dict]:
@@ -33,8 +35,48 @@ def main(argv: list[str] | None = None) -> int:
     check.add_argument("--html", type=Path, help="Write self-contained HTML report")
     check.add_argument("--json", dest="json_path", type=Path, help="Write machine-readable JSON report")
     subs.add_parser("demo", help="Generate the built-in unsafe-action demonstration and report")
+    sim = subs.add_parser("simulate", help="Pre-flight then replay an approved trace in MuJoCo")
+    sim.add_argument("trace", type=Path)
+    sim.add_argument("--spec", required=True, type=Path)
+    sim.add_argument("--model", required=True, type=Path, help="MuJoCo MJCF XML file")
+    sim.add_argument("--out", type=Path, default=Path("robotguard-output"))
+    demo_sim = subs.add_parser("mujoco-demo", help="Run the packaged real-physics MuJoCo example")
+    demo_sim.add_argument("--out", type=Path, default=Path("robotguard-output"))
     args = parser.parse_args(argv)
     try:
+        if args.command == "mujoco-demo":
+            assets = resources.files("robotguard").joinpath("assets")
+            spec = RobotSpec.from_dict(json.loads(assets.joinpath("demo_spec.json").read_text(encoding="utf-8")))
+            xml = assets.joinpath("demo_arm.xml").read_text(encoding="utf-8")
+            safe = [json.loads(line) for line in assets.joinpath("demo_safe.jsonl").read_text(encoding="utf-8").splitlines() if line.strip()]
+            unsafe = [json.loads(line) for line in assets.joinpath("demo_unsafe.jsonl").read_text(encoding="utf-8").splitlines() if line.strip()]
+            args.out.mkdir(parents=True, exist_ok=True)
+            rejected = validate_trace(spec, unsafe)
+            if rejected.ok:
+                raise SimulationError("Unsafe fixture unexpectedly passed; refusing to report success")
+            (args.out / "rejected.json").write_text(json.dumps(rejected.as_dict(), indent=2) + "\n", encoding="utf-8")
+            write_report(args.out / "rejected.html", spec, rejected)
+            simulated = simulate_trace(spec, safe, xml)
+            write_simulation(args.out, simulated)
+            print(f"Unsafe trajectory rejected ({len(rejected.violations)} pre-flight findings); no unsafe physics run")
+            print(f"Safe trajectory: {simulated['status']} in MuJoCo {simulated['mujoco_version']}")
+            print(f"Reproducible reports: {args.out.resolve()}/simulation.html and rejected.html")
+            return 0 if simulated["status"] == "SIMULATION_COMPLETED" else 1
+        if args.command == "simulate":
+            spec = RobotSpec.from_file(args.spec)
+            actions = _load_jsonl(args.trace)
+            audit = validate_trace(spec, actions)
+            args.out.mkdir(parents=True, exist_ok=True)
+            (args.out / "preflight.json").write_text(json.dumps(audit.as_dict(), indent=2) + "\n", encoding="utf-8")
+            write_report(args.out / "preflight.html", spec, audit)
+            if not audit.ok:
+                print(f"Pre-flight FAIL: {len(audit.violations)} violation(s); MuJoCo was not invoked")
+                return 1
+            simulated = simulate_trace(spec, actions, args.model.read_text(encoding="utf-8"))
+            write_simulation(args.out, simulated)
+            print(f"Pre-flight PASS; MuJoCo {simulated['mujoco_version']}: {simulated['status']}")
+            print(f"View report: {(args.out / 'simulation.html').resolve()}")
+            return 0 if simulated["status"] == "SIMULATION_COMPLETED" else 1
         if args.command == "demo":
             spec = RobotSpec.from_dict({"name": "DemoArm-3", "joint_names": ["shoulder", "elbow", "wrist"],
                 "position_limits": [[-2, 2], [-1.5, 1.5], [-3, 3]],
@@ -66,7 +108,7 @@ def main(argv: list[str] | None = None) -> int:
             args.json_path.write_text(json.dumps(report.as_dict(), indent=2) + "\n", encoding="utf-8")
             print(f"JSON report: {args.json_path}")
         return 0 if report.ok else 1
-    except (ConfigurationError, ValueError, OSError, json.JSONDecodeError) as exc:
+    except (ConfigurationError, ValueError, OSError, json.JSONDecodeError, SimulationError) as exc:
         print(f"RobotGuard error: {exc}", file=sys.stderr)
         return 2
 

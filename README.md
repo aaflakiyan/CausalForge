@@ -307,3 +307,8 @@ Integrate **two genuine, robot-compatible VLA checkpoints** into a common manipu
 ## Licence
 
 [MIT](LICENSE) for original repository code. All third-party software, datasets and checkpoints retain their respective licences.
+
+
+## RobotGuard v0.2 — pre-flight checks and MuJoCo replay
+
+RobotGuard is an experimental, offline validator for agent-generated joint-space commands, with an optional **real MuJoCo physics demo** and explicit limitations. Start at [`robotguard/README.md`](robotguard/README.md). Run `python -m pip install -e './robotguard[mujoco]'` and `robotguard mujoco-demo --out robotguard-output`. A PASS does not certify hardware safety.

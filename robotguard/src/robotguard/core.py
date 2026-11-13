@@ -16,7 +16,12 @@ class ConfigurationError(ValueError):
 
 
 def _finite(value: object) -> bool:
-    return type(value) in (int, float) and math.isfinite(float(value))
+    if type(value) not in (int, float):
+        return False
+    try:
+        return math.isfinite(float(value))
+    except (ValueError, OverflowError):
+        return False
 
 
 def _positive_vector(data: object, n: int, name: str) -> tuple[float, ...]:
@@ -52,12 +57,12 @@ class RobotSpec:
                     not all(_finite(x) for x in pair) or float(pair[0]) >= float(pair[1])
                     for pair in limits)):
             raise ConfigurationError(f"position_limits must contain {n} finite [lower, upper] pairs")
-        units = raw.get("units", "rad")
+        units = raw.get("units")
         if units not in ("rad", "deg"):
             raise ConfigurationError("units must be explicitly 'rad' or 'deg'")
-        frame = raw.get("frame", "joint")
-        if not isinstance(frame, str) or not frame:
-            raise ConfigurationError("frame must be a non-empty string")
+        frame = raw.get("frame")
+        if frame != "joint":
+            raise ConfigurationError("joint-position trace checker requires explicit frame='joint'")
         gap = raw.get("max_interval_s", 0.2)
         if not _finite(gap) or gap <= 0:
             raise ConfigurationError("max_interval_s must be positive and finite")
@@ -169,6 +174,10 @@ def validate_trace(spec: RobotSpec, actions: Sequence[Mapping[str, Any]]) -> Res
                 report.violations.append(Violation(i, "timing_gap", f"Step interval {dt:.4g}s exceeds {spec.max_interval_s:g}s", value=dt, limit=spec.max_interval_s))
                 prev_velocity = prev_dt = None
             velocities = tuple((x - old) / dt for x, old in zip(values, prev[1]))
+            if not all(math.isfinite(v) for v in velocities):
+                report.violations.append(Violation(i, "velocity_overflow", "Finite positions/timestamps produced non-finite velocity"))
+                prev = prev_velocity = prev_dt = None
+                continue
             for j, velocity in enumerate(velocities):
                 report.peak_velocity = max(report.peak_velocity, abs(velocity))
                 if abs(velocity) > spec.max_velocity[j] + 1e-9:
@@ -179,6 +188,9 @@ def validate_trace(spec: RobotSpec, actions: Sequence[Mapping[str, Any]]) -> Res
                 step_between_midpoints = (dt + prev_dt) / 2.0
                 for j, (current, previous) in enumerate(zip(velocities, prev_velocity)):
                     acc = abs(current - previous) / step_between_midpoints
+                    if not math.isfinite(acc):
+                        report.violations.append(Violation(i, "acceleration_overflow", f"{spec.joint_names[j]}: non-finite calculated acceleration", spec.joint_names[j]))
+                        continue
                     report.peak_acceleration = max(report.peak_acceleration, acc)
                     if acc > spec.max_acceleration[j] + 1e-9:
                         report.violations.append(Violation(i, "acceleration_limit", f"{spec.joint_names[j]}: |acceleration|={acc:.4g} exceeds {spec.max_acceleration[j]:g} {spec.units}/s²",

@@ -1,84 +1,101 @@
-# RobotGuard
+# RobotGuard · test robot trajectories before you trust them
 
-**A pre-flight check for AI-generated robot actions.** Catch joint-limit violations, unit and frame mismatches, excessive velocities, acceleration spikes and timing errors *before* sending a trajectory to a simulator.
+A small, deterministic, **simulation-first** pre-flight checker for joint-position commands produced by policies, VLA agents or scripts. Validate the command trace, then use a **real MuJoCo physics simulation** to compare commanded versus observed joint positions.
 
-> **Early developer preview (v0.1).** A deterministic joint-space trace validator, **not** certified safety software. This does **not** detect collisions, torque/force hazards, unreachable Cartesian poses or real-world control instability. Never use it as the sole safety mechanism for physical robots.
+**This is an experimental developer tool, not certified safety software.** A pre-flight PASS means only that the checked samples satisfy the *supplied* kinematic thresholds. The thresholds may be wrong. Passing does not establish collision clearance, torque/force safety, hardware feasibility, continuous-time validity or real-world readiness.
 
-![RobotGuard example audit](assets/robotguard-preview.svg)
+![Example of pre-flight reporting](assets/robotguard-preview.svg)
 
-## Try it in under a minute
+## Quick start: no robot, no GPU, no credentials
 
-```bash
-# From the CausalForge repository root:
-python -m pip install -e ./robotguard
-robotguard demo
-# Open robotguard-demo.html in your browser.
-```
-
-To check your own trace:
+Python **3.11** is recommended. On a clean machine, from the CausalForge repository root:
 
 ```bash
-robotguard check robotguard/examples/safe.jsonl --spec robotguard/examples/robot.json --html safe.html --json safe.json
-# PASS — exit code 0
-
-robotguard check robotguard/examples/unsafe.jsonl --spec robotguard/examples/robot.json --html unsafe.html --json unsafe.json
-# FAIL — exit code 1 (expected for the unsafe example)
+python -m venv .venv
+# Linux/macOS:
+source .venv/bin/activate
+# Windows PowerShell: .venv\\Scripts\\Activate.ps1
+python -m pip install -e './robotguard[mujoco]'
+robotguard mujoco-demo --out robotguard-output
 ```
 
-The generated HTML report runs completely offline, including the joint-position chart and all findings. The JSON output is suitable for CI, evaluations and agent workflows.
+On Windows PowerShell, use `python -m pip install -e ".\\robotguard[mujoco]"` if quoting differs in your shell.
 
-## Why this exists
+Open `robotguard-output/simulation.html` in your browser. You will also find `simulation.json`, `rejected.html` and `rejected.json`. The plots show the **real simulated joint positions** alongside the target positions; the reports work offline and do not call an AI service.
 
-A VLA or coding agent can output a plausible-looking action that is wrong for the robot: degrees instead of radians, a different reference frame, a large jump in 100 ms, an invalid joint index or a malformed timestamp. RobotGuard performs explicit checks with readable reasons and machine-readable results. It **rejects** invalid actions rather than silently clipping or converting them.
+The demo runs two separate cases:
 
-### Input format
+* A kinematically valid command trace is replayed with the actual MuJoCo engine, and numerical tracking errors are reported. This is *not* a guarantee that the simulated dynamics are safe.
+* A deliberately invalid trace is stopped by pre-flight checks. It is **not** simulated, and the resulting audit explains why.
 
-`robot.json` defines `joint_names`, `position_limits`, `max_velocity`, `max_acceleration`, the declared `units` (`rad` or `deg`), expected `frame` and the largest accepted step interval `max_interval_s`. All position/velocity/acceleration values must use the same declared units, per second or per second squared. Angular commands only in v0.1; no Cartesian motion checking.
+The scene is a **synthetic planar 2-joint arm** — **not** UR, Franka or any manufacturer's verified model. Its limits and actuator parameters are illustrative and are **not hardware safety limits**. The MJCF and example inputs are installed as package assets under `robotguard/src/robotguard/assets/` for reproducibility.
 
-`actions.jsonl` contains one command per line:
+### See the 3D model
+
+On a desktop with a working graphical display, you can open the model in MuJoCo's standalone viewer:
+
+```bash
+python -m mujoco.viewer --mjcf=robotguard/src/robotguard/assets/demo_arm.xml
+```
+
+This shows the model and allows interactive examination; it is **not** a replay of the validated trajectory. The `mujoco-demo` command is the actual scripted physics replay and works headlessly, without a viewer.
+
+## Check or simulate your own robot trajectory
+
+Create an explicit JSON specification, e.g. the packaged demo spec at `robotguard/src/robotguard/assets/demo_spec.json`. A JSONL trace has one action on each line, for example:
 
 ```json
-{"t": 0.1, "position": [0.005, 0.006, 0.004], "units": "rad", "frame": "joint"}
+{"t": 0.1, "position": [0.02, 0.01], "units": "rad", "frame": "joint"}
 ```
 
-Timestamps must be finite, strictly increasing, non-negative, and expressed in **seconds**. The vector order must match `joint_names` exactly. Position limits are inclusive. Velocities use `Δposition/Δtime`; accelerations use successive segment velocities divided by the separation of their midpoints, which works for uneven sampling. There is no implicit coordinate conversion.
+Inspect the model and limitations before running:
 
-### Python API: guard a stream of proposed actions
+```bash
+robotguard check robotguard/src/robotguard/assets/demo_safe.jsonl \
+  --spec robotguard/src/robotguard/assets/demo_spec.json \
+  --html preflight.html --json preflight.json
 
-```python
-from robotguard import RobotSpec, StreamGuard
-
-spec = RobotSpec.from_file("robotguard/examples/robot.json")
-guard = StreamGuard(spec)
-
-proposal = {"t": 0.0, "position": [0.0, 0.0, 0.0], "units": "rad", "frame": "joint"}
-decision = guard.propose(proposal)
-if decision.ok:
-    # Only hand this to a separate, independently safeguarded simulator adapter.
-    print("Accepted in offline pre-flight checks")
-else:
-    print([v.as_dict() for v in decision.violations])
+robotguard simulate robotguard/src/robotguard/assets/demo_safe.jsonl \
+  --spec robotguard/src/robotguard/assets/demo_spec.json \
+  --model robotguard/src/robotguard/assets/demo_arm.xml \
+  --out my-simulation
 ```
 
-`StreamGuard` keeps accepted actions and rejects a proposed sample if any check fails. It is suitable for low-volume demos and analysis, **not** real-time control: each proposal currently revalidates the accepted history. For long datasets use `validate_trace()` in batch mode.
+Use one line for these commands on Windows if backslash continuation is not supported by your shell.
 
-## AI agent integration
+The simulation adapter **refuses** to run when a command has a pre-flight violation or the MJCF model's hinge names, joint limits, actuator connections, unit gear, actuator control limits, or position servo behaviour do not match the spec. It currently requires **exactly one hinge and one supported position servo per joint** and **radians**. Other actuation types need a separate, properly validated adapter; they are **not** silently converted or approximated.
 
-The [`skills/robotguard/SKILL.md`](skills/robotguard/SKILL.md) file gives coding agents explicit instructions to produce a robot spec, generate an action trace and run validation. No credentials, cloud API or agent framework are required. Exit code **0** = pass, **1** = violations, **2** = bad inputs/configuration.
+Exit codes: `0` means checks passed (and, when requested, physics replay completed without *observed* sample-limit violations); `1` means a pre-flight violation or observed simulated limit violation; `2` means bad input, a model incompatibility or MuJoCo could not run. Results are stored separately: **pre-flight status** is distinct from **simulation status**.
 
-## Tests and roadmap
+## What is verified — and what is not
+
+| Check | Static pre-flight | MuJoCo replay |
+|---|---|---|
+| Position / velocity / acceleration limits on requested samples | Yes | Uses an approved input only |
+| Explicit units / frame / monotonic timestamps | Yes | Rejects unsupported units and frame |
+| Model joint names, limits, position servos and gear | Not applicable | Yes, for the narrowly supported adapter |
+| Actual simulated joint motion / tracking error | No | Yes, measured from `MjData.qpos` |
+| Actual simulated joint position limit crossings | No | Yes, checked on each integration step |
+| Collisions, contact forces, torque and stability guarantees | **No** | **No**; a physics run is not certification |
+| Real-robot hardware safety | **No** | **No** |
+
+Recorded MuJoCo frames show **solid** lines for measured `qpos` and **dashed** lines for target positions. Model and trace SHA-256 hashes, MuJoCo version, physics step and explicit initialisation assumptions are included in the JSON report. The first waypoint is used to initialise the simulated state directly. Reference setpoints are piecewise-linear, and velocity discontinuities at knot points are not excluded by this validator.
+
+For developers: optional `StreamGuard` can reject a proposed action before forwarding it to a separate simulator adapter. It **revalidates its accepted history** and is **not** a real-time safety controller.
+
+## Verification you can reproduce
 
 ```bash
 cd robotguard
-PYTHONPATH=src python -m unittest discover -s tests -v
+python -m unittest discover -s tests -v
 ```
 
-**What is implemented:** Python package, CLI, JSONL parser, specification validation, position/velocity/acceleration checks, strict units and reference-frame tags, timing checks, HTML and JSON reports, stream gate, fixtures and unit tests.
+Run these tests with the `[mujoco]` extra installed to execute the real physics checks. The GitHub workflow `.github/workflows/robotguard-mujoco.yml` installs the optional MuJoCo engine, runs negative tests and physics tests, checks the JSON claims and publishes `robotguard-mujoco-reports` as an Actions artefact. If the workflow did not pass, **do not describe MuJoCo playback as verified**.
 
-**What is not implemented:** collision checking, dynamic feasibility, ROS 2 bridge, MuJoCo policy execution, ISO-compliant safety controls, agent MCP server, certified hardware interfaces. Future work should integrate these as separate, clearly labelled adapters with their own tests.
+The accompanying [DESIGN_REVIEW.md](DESIGN_REVIEW.md) records what can go wrong, which assumptions are checked, and which remain unverified. The [agent skill](skills/robotguard/SKILL.md) instructs AI assistants **not** to invent robot limits, simulation results or certification claims.
 
-Open issues and contributions are welcome. This project deliberately makes no claim that a PASS is sufficient for hardware deployment.
+## Scope and contribution
 
-## Licence
+RobotGuard has no cloud dependency, AI provider, API key or telemetry. Its output is deterministic given the versioned command trace, robot specification and physics model, though exact floating-point simulation results may vary by MuJoCo version and platform. It accepts no natural-language instructions and generates no factual claims using an LLM.
 
-MIT (same licence as CausalForge). See the repository-level `LICENSE`.
+We welcome reproducible bug reports (specification, MJCF, trace, exact command, environment, expected versus observed outcome). The project uses the repository's MIT licence.
