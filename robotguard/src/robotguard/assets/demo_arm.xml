@@ -1,0 +1,26 @@
+<mujoco model="robotguard_synthetic_planar_arm">
+  <compiler angle="radian" autolimits="true"/>
+  <option timestep="0.002" gravity="0 0 0" integrator="implicitfast"/>
+  <visual><global azimuth="110" elevation="-55"/></visual>
+  <default>
+    <joint damping="0.6" armature="0.025"/>
+    <geom contype="0" conaffinity="0"/>
+  </default>
+  <worldbody>
+    <light name="light" pos="0 0 2"/>
+    <geom name="floor" type="plane" size="2 2 0.1" rgba="0.08 0.12 0.20 1"/>
+    <body name="link_1" pos="0 0 0.35">
+      <joint name="shoulder" type="hinge" axis="0 0 1" limited="true" range="-1.5 1.5"/>
+      <geom name="upper_arm" type="capsule" fromto="0 0 0 0.4 0 0" size="0.035" mass="0.6" rgba="0.25 0.64 0.96 1"/>
+      <body name="link_2" pos="0.4 0 0">
+        <joint name="elbow" type="hinge" axis="0 0 1" limited="true" range="-1.2 1.2"/>
+        <geom name="forearm" type="capsule" fromto="0 0 0 0.3 0 0" size="0.028" mass="0.3" rgba="0.69 0.54 0.96 1"/>
+        <site name="tool_tip" pos="0.3 0 0" size="0.02" rgba="1 .55 .3 1"/>
+      </body>
+    </body>
+  </worldbody>
+  <actuator>
+    <position name="shoulder_servo" joint="shoulder" kp="35" kv="6" ctrlrange="-1.5 1.5" forcerange="-30 30"/>
+    <position name="elbow_servo" joint="elbow" kp="25" kv="5" ctrlrange="-1.2 1.2" forcerange="-20 20"/>
+  </actuator>
+</mujoco>

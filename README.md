@@ -7,6 +7,19 @@
 [![MuJoCo](https://img.shields.io/badge/Physics-MuJoCo-2563EB)](SIMULATION_ENVIRONMENTS.md)
 [![Licence](https://img.shields.io/badge/Licence-MIT-16A34A)](LICENSE)
 
+## New: RobotGuard — pre-flight checks for agent-generated robot actions
+
+**[Try RobotGuard](robotguard/README.md)** — a standalone, zero-runtime-dependency Python CLI that checks any explicitly specified joint-space trajectory for unit/frame mismatches, invalid timestamps, joint limits, excessive velocity and acceleration. It produces an offline HTML report and machine-readable JSON audit, without needing MuJoCo or a robot.
+
+```bash
+python -m pip install -e ./robotguard
+robotguard demo   # writes robotguard-demo.html (intentionally flags six issues)
+```
+
+![RobotGuard example report](robotguard/assets/robotguard-preview.svg)
+
+This is a **simulation-first kinematic pre-flight tool**, not collision checking, a hardware safety controller or a guarantee that a motion is safe. See the [standalone module documentation](robotguard/README.md) and [agent skill](robotguard/skills/robotguard/SKILL.md).
+
 > **Research prototype — not a trained humanoid foundation model.** CausalForge currently demonstrates synthetic policy teachers, physically testable hypotheses, experiment selection, recorded action replay, and small-scale MuJoCo evaluation. Pretrained GR00T / π₀ teachers and real-humanoid validation are **not yet implemented**.
 
 ## Try the validated policy API in one command
@@ -294,3 +307,8 @@ Integrate **two genuine, robot-compatible VLA checkpoints** into a common manipu
 ## Licence
 
 [MIT](LICENSE) for original repository code. All third-party software, datasets and checkpoints retain their respective licences.
+
+
+## RobotGuard v0.2 — pre-flight checks and MuJoCo replay
+
+RobotGuard is an experimental, offline validator for agent-generated joint-space commands, with an optional **real MuJoCo physics demo** and explicit limitations. Start at [`robotguard/README.md`](robotguard/README.md). Run `python -m pip install -e './robotguard[mujoco]'` and `robotguard mujoco-demo --out robotguard-output`. A PASS does not certify hardware safety.
