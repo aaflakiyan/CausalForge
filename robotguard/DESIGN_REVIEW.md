@@ -36,9 +36,15 @@
 - [x] No implicit clamping, unit conversion or fabrication of safety limits
 - [x] Distinct pre-flight and actual simulation statuses and reports
 - [x] Document what initialisation, discretisation and actuator assumptions are used
-- [ ] Confirm real MuJoCo CI job passes and artefact contains measured trajectories
+- [x] Confirm real MuJoCo CI job passes and artefact contains measured trajectories — [real-physics run 43412073900](https://github.com/aaflakiyan/CausalForge/actions/runs/43412073900), 29 tests passed on MuJoCo 3.17.0
 - [ ] Test clean installs and graphical viewer on Windows/macOS, beyond CI Linux
 - [ ] Add collision/contact checking and more representative robot models, with independent tests
 - [ ] Implement uncertainty-aware model validation before any hardware-facing interface
 
 **Review gate:** do not merge or market this as tested MuJoCo simulation until the real-physics CI passes. Even after it passes, no hardware deployment claim is appropriate.
+
+## Verified physics result (GitHub Actions, 13 November 2026)
+
+The Linux CI runner installed a real MuJoCo 3.17.0 package and stepped the synthetic two-joint arm for **350 integration steps** (0.7 s simulated). The emitted `simulation.json` reports **maximum joint tracking error 0.09143985 rad**, **tracking RMSE 0.04966133 rad**, and **zero observed joint position-limit crossings** on this particular trajectory. `rejected.json` separately records four static findings for the invalid trajectory, which was **never simulated**. These are measured outputs of a deliberately small synthetic example and must not be extrapolated to hardware safety or other tasks.
+
+[CI job and downloadable `robotguard-mujoco-reports` artefact](https://github.com/aaflakiyan/CausalForge/actions/runs/43412073900). Re-run on other platforms and MuJoCo versions before claiming broad compatibility.
