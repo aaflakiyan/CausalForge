@@ -44,10 +44,40 @@ jobs:
           assert all(len(row['link_points_xy_m']) == 3 for row in simulated['records'])
           print('MuJoCo replay and preflight-rejection reports verified')
           PY
+      - name: End-to-end integration, comparison dashboard and provenance
+        run: |
+          robotguard showcase --out robotguard-showcase-ci
+          python - <<'PYTEST'
+          import json
+          from pathlib import Path
+          d = Path('robotguard-showcase-ci')
+          summary = json.loads((d/'comparison.json').read_text())
+          assert summary['physical_safety_certified'] is False
+          assert summary['rejected_violations'] > 0
+          assert set(summary['policies']) == {'linear', 'smoothstep'}
+          assert (d/'index.html').is_file()
+          assert (d/'inputs'/'linear.jsonl').is_file()
+          assert (d/'inputs'/'smoothstep.jsonl').is_file()
+          a = json.loads((d/'linear'/'simulation.json').read_text())
+          b = json.loads((d/'smoothstep'/'simulation.json').read_text())
+          assert a['model_sha256'] == b['model_sha256']
+          assert a['trace_sha256'] != b['trace_sha256']
+          assert a['simulated_duration_s'] == b['simulated_duration_s']
+          for data in [a, b]:
+              assert data['integration_steps'] > 100
+              assert data['status'] == 'SIMULATION_COMPLETED'
+              assert data['preflight_status'] == 'PASS'
+              assert data['physical_safety_certified'] is False
+              assert len(data['records']) > 5
+              assert (d/'linear'/'playground.html').is_file()
+          print('Verified two measured policies, common model, recorded data and auditable reports')
+          PYTEST
       - name: Publish reproducible result files
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: robotguard-mujoco-reports
-          path: robotguard-ci-artifacts/
+          path: |
+            robotguard-ci-artifacts/
+            robotguard-showcase-ci/
           if-no-files-found: warn

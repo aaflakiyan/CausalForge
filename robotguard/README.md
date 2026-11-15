@@ -1,12 +1,49 @@
 # RobotGuard Playground · test robot actions, see what actually happened
 
+## Start here: one command, two policies, real physics, one visual report
+
+```bash
+# At the CausalForge repository root; Python 3.11 recommended
+python -m pip install -e './robotguard[mujoco]'
+robotguard showcase --out robotguard-showcase
+# Open robotguard-showcase/index.html in your browser
+```
+
+**What you get:** one offline interactive comparison page with synchronized playback of **two separate real MuJoCo simulations**, per-policy commanded versus observed curves, matching robot-model hashes, a deliberately rejected input and links to the original JSON reports. The baselines are **hand-coded motion profiles**, NOT trained VLA models. You do not need a physical robot, API key, or GPU. If MuJoCo is unavailable or the physics run fails, the command exits without claiming a verified result.
+
+![RobotGuard pre-flight example](assets/robotguard-preview.svg)
+
+### Exactly where to connect a policy
+
+```mermaid
+flowchart LR
+    A[Your Python policy / VLA wrapper] -->|named joint targets and timestamps| B[Explicit action contract]
+    B -->|JSONL| C{RobotGuard preflight}
+    C -->|FAIL| D[Rejection report / no simulation]
+    C -->|PASS| E[Supported MuJoCo MJCF adapter]
+    E --> F[Actual physics observations]
+    F --> G[Offline playback / metrics / hashes]
+```
+
+| Integration path | Status | First command / interface |
+|---|---|---|
+| Built-in demonstrator | **Tested in GitHub real-MuJoCo CI** | `robotguard showcase --out robotguard-showcase` |
+| Your Python model wrapper | **Implemented: explicit callable-to-JSONL bridge** | `python robotguard/examples/connect_my_policy.py` |
+| External joint-position JSONL | **Implemented for the narrow validated position-servo MJCF contract** | `robotguard simulate YOUR_TRACE.jsonl --spec YOUR_SPEC.json --model YOUR_MODEL.xml --out results` |
+| LeRobot, OpenPI, Dream-1 | **No native integration** | First implement a tested model-specific action adapter |
+| ROS 2 bag/commands or physical UR/Franka | **Not implemented** | Export and verify offline only; do not use as a hardware safety device |
+
+See **[INTEGRATIONS.md](INTEGRATIONS.md)** for an action schema, a complete Python example, output-file map and limitations.
+
+---
+
 A small, deterministic, **simulation-first** pre-flight checker for joint-position commands produced by policies, VLA agents or scripts. Validate the command trace, then use a **real MuJoCo physics simulation** to compare commanded versus observed joint positions.
 
 **This is an experimental developer tool, not certified safety software.** A pre-flight PASS means only that the checked samples satisfy the *supplied* kinematic thresholds. The thresholds may be wrong. Passing does not establish collision clearance, torque/force safety, hardware feasibility, continuous-time validity or real-world readiness.
 
 ![Example of pre-flight reporting](assets/robotguard-preview.svg)
 
-**v0.3: evidence-first browser playback.** The browser playback is an **offline viewer of actual recorded MuJoCo observations**. The page cannot invent or execute robot motion itself, does not call an AI provider, and is not the same as a live robot-control playground such as Dream Labs. It is deliberately scoped to our included synthetic planar-arm demonstration; other robots still receive numeric reports until their scene geometry is validated.
+**v0.4: policy integration and comparative playback.** v0.3 added The browser playback is an **offline viewer of actual recorded MuJoCo observations**. The page cannot invent or execute robot motion itself, does not call an AI provider, and is not the same as a live robot-control playground such as Dream Labs. It is deliberately scoped to our included synthetic planar-arm demonstration; other robots still receive numeric reports until their scene geometry is validated.
 
 ## Quick start: no robot, no GPU, no credentials
 
@@ -112,6 +149,6 @@ The product goal is *policy → pre-flight → physics → observed motion → e
 2. **Be model-agnostic without guessing:** accept a future policy's joint-position trace only after the adapter explicitly declares units, frame, joint order, sample rate and action semantics. Reject EEF targets until an independently tested IK adapter exists.
 3. **Make all claims traceable:** label simulated observations versus predicted targets; archive model/trace hashes, versions, samples and failures. Never imply a PASS certifies hardware safety.
 
-Planned but **not implemented**: optional user-supplied Python policy adapters; standard bridges for LeRobot/OpenPI/Dream-1 (subject to documented action contracts and permissions); UR5e and Franka scenes; explicit contact/collision evaluation; scored multi-seed benchmarks; hosted multi-user playground. These are not current features.
+Planned but **not implemented**: native framework-specific policy adapters; standard bridges for LeRobot/OpenPI/Dream-1 (subject to documented action contracts and permissions); UR5e and Franka scenes; explicit contact/collision evaluation; scored multi-seed benchmarks; hosted multi-user playground. These are not current features.
 
 See [PRODUCT_DIRECTION.md](PRODUCT_DIRECTION.md) for the complete scope and acceptance criteria.

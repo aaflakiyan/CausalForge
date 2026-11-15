@@ -2,4 +2,6 @@
 from .core import ConfigurationError, Result, RobotSpec, StreamGuard, Violation, validate_trace
 
 __all__ = ["ConfigurationError", "Result", "RobotSpec", "StreamGuard", "Violation", "validate_trace"]
-__version__ = "0.1.0"
+__version__ = "0.4.0"
+
+from .integration import PolicyContractError, actions_from_policy, write_actions_jsonl

@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "robotguard-preflight"
-version = "0.3.0"
-description = "Evidence-first robot policy testing with MuJoCo replay and offline visual playground"
+version = "0.4.0"
+description = "Connect a robot policy, check commands, run MuJoCo and inspect measured side-by-side motion"
 readme = "README.md"
 requires-python = ">=3.10"
 license = {text = "MIT"}

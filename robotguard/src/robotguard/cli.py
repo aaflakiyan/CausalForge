@@ -10,6 +10,8 @@ import sys
 from .core import ConfigurationError, RobotSpec, validate_trace
 from .report import write_report
 from .simulation import SimulationError, simulate_trace, write_simulation
+from .integration import PolicyContractError
+from .showcase import ComparisonError
 
 
 def _load_jsonl(path: Path) -> list[dict]:
@@ -44,8 +46,19 @@ def main(argv: list[str] | None = None) -> int:
     play = subs.add_parser("playground", help="Open-source offline robot replay: measured MuJoCo physics and browser controls")
     play.add_argument("--out", type=Path, default=Path("robotguard-output"))
     demo_sim.add_argument("--out", type=Path, default=Path("robotguard-output"))
+    showcase = subs.add_parser("showcase", help="Run two deterministic policies through actual MuJoCo and open an offline comparison dashboard")
+    showcase.add_argument("--out", type=Path, default=Path("robotguard-showcase"))
     args = parser.parse_args(argv)
     try:
+        if args.command == "showcase":
+            from .showcase import run_showcase
+            result = run_showcase(args.out)
+            print("Policy contract -> preflight -> real MuJoCo -> measured replay: completed")
+            for name, meta in result["policies"].items():
+                print(f"  {name}: RMSE={meta['metrics']['rmse_tracking_error_rad']:.6f} rad; physics steps={meta['integration_steps']}")
+            print(f"Rejected input: {result['rejected_violations']} diagnostic(s); not simulated")
+            print(f"Dashboard: {(args.out / 'index.html').resolve()}")
+            return 0
         if args.command in ("mujoco-demo", "playground"):
             assets = resources.files("robotguard").joinpath("assets")
             spec = RobotSpec.from_dict(json.loads(assets.joinpath("demo_spec.json").read_text(encoding="utf-8")))
@@ -112,7 +125,7 @@ def main(argv: list[str] | None = None) -> int:
             args.json_path.write_text(json.dumps(report.as_dict(), indent=2) + "\n", encoding="utf-8")
             print(f"JSON report: {args.json_path}")
         return 0 if report.ok else 1
-    except (ConfigurationError, ValueError, OSError, json.JSONDecodeError, SimulationError) as exc:
+    except (ConfigurationError, ValueError, OSError, json.JSONDecodeError, SimulationError, PolicyContractError, ComparisonError) as exc:
         print(f"RobotGuard error: {exc}", file=sys.stderr)
         return 2
 
