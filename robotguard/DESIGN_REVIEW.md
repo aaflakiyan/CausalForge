@@ -1,4 +1,4 @@
-# RobotGuard adversarial design review (v0.2)
+# RobotGuard adversarial design review (v0.3)
 
 **Problem statement.** An AI-generated trajectory can be numerically wrong, but checking a sequence of joint positions cannot prove that a robot can safely execute it. RobotGuard deliberately separates (1) static trace checking, (2) model-compatibility verification and (3) actual physics replay. None of the three certifies real-world functional safety.
 
@@ -36,15 +36,19 @@
 - [x] No implicit clamping, unit conversion or fabrication of safety limits
 - [x] Distinct pre-flight and actual simulation statuses and reports
 - [x] Document what initialisation, discretisation and actuator assumptions are used
-- [x] Confirm real MuJoCo CI job passes and artefact contains measured trajectories — [real-physics run 43412073900](https://github.com/aaflakiyan/CausalForge/actions/runs/43412073900), 29 tests passed on MuJoCo 3.17.0
+- [ ] Confirm real MuJoCo CI job passes and artefact contains measured trajectories
 - [ ] Test clean installs and graphical viewer on Windows/macOS, beyond CI Linux
 - [ ] Add collision/contact checking and more representative robot models, with independent tests
 - [ ] Implement uncertainty-aware model validation before any hardware-facing interface
 
 **Review gate:** do not merge or market this as tested MuJoCo simulation until the real-physics CI passes. Even after it passes, no hardware deployment claim is appropriate.
 
-## Verified physics result (GitHub Actions, 13 November 2026)
+## 15 November 2026: Dream Labs comparison and scope challenge
 
-The Linux CI runner installed a real MuJoCo 3.17.0 package and stepped the synthetic two-joint arm for **350 integration steps** (0.7 s simulated). The emitted `simulation.json` reports **maximum joint tracking error 0.09143985 rad**, **tracking RMSE 0.04966133 rad**, and **zero observed joint position-limit crossings** on this particular trajectory. `rejected.json` separately records four static findings for the invalid trajectory, which was **never simulated**. These are measured outputs of a deliberately small synthetic example and must not be extrapolated to hardware safety or other tasks.
+**Why not imitate Dream Labs and generate instructions-to-actions?** Dream-1 has a foundation model, trained on robotics data and served through its API. RobotGuard neither has that model nor the dataset. An untested natural-language-to-action demo would undermine the evidence-first promise. We should support external models only after validating action schemas and running real physics.
 
-[CI job and downloadable `robotguard-mujoco-reports` artefact](https://github.com/aaflakiyan/CausalForge/actions/runs/43412073900). Re-run on other platforms and MuJoCo versions before claiming broad compatibility.
+**Why not claim the new browser interface is real-time or a digital twin?** The viewer replays sampled world-frame joint anchors and end-effector sites recorded from the bundled MuJoCo synthetic arm. It does not generate action commands, interpolate unsampled simulator states or render full 3D geometry. An offline viewer is a display, not a physics engine.
+
+**Can a malicious MJCF with the same joint names fool us?** Yes. The semantic compatibility of arbitrary dynamics, geometry, sensor calibration, collisions and actuators remains out of scope. The top-down viewer is only generated if three world-frame points were recorded at every saved sample; unsupported scenes receive numerical reports.
+
+**What about competing safety harnesses?** OpenRAL, Aegis, SafeVLA and related projects already offer broad runtime-policy claims. The distinctive product should be a reproducible simulator-first experience with no fictitious measurements. Need a third-party comparison before promising superiority.

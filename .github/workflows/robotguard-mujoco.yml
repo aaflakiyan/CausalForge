@@ -23,7 +23,7 @@ jobs:
       - name: Run contract and real-physics tests
         run: python -m unittest discover -s robotguard/tests -v
       - name: Run packaged MuJoCo reproducibility example
-        run: robotguard mujoco-demo --out robotguard-ci-artifacts
+        run: robotguard playground --out robotguard-ci-artifacts
       - name: Verify claims are backed by simulation output
         run: |
           python - <<'PY'
@@ -39,6 +39,9 @@ jobs:
           assert simulated['physical_safety_certified'] is False
           assert rejected['status'] == 'FAIL'
           assert (base / 'simulation.html').is_file()
+          assert (base / 'playground.html').is_file()
+          assert all('link_points_xy_m' in row for row in simulated['records'])
+          assert all(len(row['link_points_xy_m']) == 3 for row in simulated['records'])
           print('MuJoCo replay and preflight-rejection reports verified')
           PY
       - name: Publish reproducible result files

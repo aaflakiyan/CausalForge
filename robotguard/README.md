@@ -1,10 +1,12 @@
-# RobotGuard · test robot trajectories before you trust them
+# RobotGuard Playground · test robot actions, see what actually happened
 
 A small, deterministic, **simulation-first** pre-flight checker for joint-position commands produced by policies, VLA agents or scripts. Validate the command trace, then use a **real MuJoCo physics simulation** to compare commanded versus observed joint positions.
 
 **This is an experimental developer tool, not certified safety software.** A pre-flight PASS means only that the checked samples satisfy the *supplied* kinematic thresholds. The thresholds may be wrong. Passing does not establish collision clearance, torque/force safety, hardware feasibility, continuous-time validity or real-world readiness.
 
 ![Example of pre-flight reporting](assets/robotguard-preview.svg)
+
+**v0.3: evidence-first browser playback.** The browser playback is an **offline viewer of actual recorded MuJoCo observations**. The page cannot invent or execute robot motion itself, does not call an AI provider, and is not the same as a live robot-control playground such as Dream Labs. It is deliberately scoped to our included synthetic planar-arm demonstration; other robots still receive numeric reports until their scene geometry is validated.
 
 ## Quick start: no robot, no GPU, no credentials
 
@@ -16,12 +18,12 @@ python -m venv .venv
 source .venv/bin/activate
 # Windows PowerShell: .venv\\Scripts\\Activate.ps1
 python -m pip install -e './robotguard[mujoco]'
-robotguard mujoco-demo --out robotguard-output
+robotguard playground --out robotguard-output
 ```
 
 On Windows PowerShell, use `python -m pip install -e ".\\robotguard[mujoco]"` if quoting differs in your shell.
 
-Open `robotguard-output/simulation.html` in your browser. You will also find `simulation.json`, `rejected.html` and `rejected.json`. The plots show the **real simulated joint positions** alongside the target positions; the reports work offline and do not call an AI service.
+Open **`robotguard-output/playground.html`** in your browser to play, pause or scrub through **measured MuJoCo joint and tool-tip positions** in a top-down XY projection. The page works fully offline, including on machines without MuJoCo installed, *after a real simulation has produced its records*. You will also find `simulation.html`, `simulation.json`, `rejected.html` and `rejected.json`. The plots show the **real simulated joint positions** alongside the target positions; the reports work offline and do not call an AI service.
 
 The demo runs two separate cases:
 
@@ -90,7 +92,7 @@ cd robotguard
 python -m unittest discover -s tests -v
 ```
 
-Run these tests with the `[mujoco]` extra installed to execute the real physics checks. The GitHub workflow `.github/workflows/robotguard-mujoco.yml` installs the optional MuJoCo engine, runs negative tests and physics tests, checks the JSON claims and publishes `robotguard-mujoco-reports` as an Actions artefact. If the workflow did not pass, **do not describe MuJoCo playback as verified**.
+Run these tests with the `[mujoco]` extra installed to execute the real physics checks. The GitHub workflow `.github/workflows/robotguard-mujoco.yml` installs the optional MuJoCo engine, runs negative tests and physics tests, checks the JSON claims **and checks that measured world-frame replay points exist**, then publishes `robotguard-mujoco-reports` as an Actions artefact. If the workflow did not pass, **do not describe MuJoCo playback as verified**.
 
 The accompanying [DESIGN_REVIEW.md](DESIGN_REVIEW.md) records what can go wrong, which assumptions are checked, and which remain unverified. The [agent skill](skills/robotguard/SKILL.md) instructs AI assistants **not** to invent robot limits, simulation results or certification claims.
 
@@ -99,3 +101,17 @@ The accompanying [DESIGN_REVIEW.md](DESIGN_REVIEW.md) records what can go wrong,
 RobotGuard has no cloud dependency, AI provider, API key or telemetry. Its output is deterministic given the versioned command trace, robot specification and physics model, though exact floating-point simulation results may vary by MuJoCo version and platform. It accepts no natural-language instructions and generates no factual claims using an LLM.
 
 We welcome reproducible bug reports (specification, MJCF, trace, exact command, environment, expected versus observed outcome). The project uses the repository's MIT licence.
+
+## Product direction (inspired by Dream Labs, not a clone)
+
+Dream-1 supplies **predicted actions** from images, robot state and natural-language tasks. RobotGuard is an **independent evaluation and replay tool** that only consumes explicitly defined trajectories and versioned physics models. We cannot currently run a Dream-1 policy: it requires the vendor API and an embodiment-specific integration. We will **not** advertise such support until a public contract adapter and its integration tests exist.
+
+The product goal is *policy → pre-flight → physics → observed motion → evidence*. Three rules guide future work:
+
+1. **See it without owning a robot:** one documented command, real physics and offline replay before a user configures another model.
+2. **Be model-agnostic without guessing:** accept a future policy's joint-position trace only after the adapter explicitly declares units, frame, joint order, sample rate and action semantics. Reject EEF targets until an independently tested IK adapter exists.
+3. **Make all claims traceable:** label simulated observations versus predicted targets; archive model/trace hashes, versions, samples and failures. Never imply a PASS certifies hardware safety.
+
+Planned but **not implemented**: optional user-supplied Python policy adapters; standard bridges for LeRobot/OpenPI/Dream-1 (subject to documented action contracts and permissions); UR5e and Franka scenes; explicit contact/collision evaluation; scored multi-seed benchmarks; hosted multi-user playground. These are not current features.
+
+See [PRODUCT_DIRECTION.md](PRODUCT_DIRECTION.md) for the complete scope and acceptance criteria.

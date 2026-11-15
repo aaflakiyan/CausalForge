@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "robotguard-preflight"
-version = "0.2.0"
-description = "Pre-flight checks for AI-generated robot actions: units, limits, velocity, acceleration, and timing"
+version = "0.3.0"
+description = "Evidence-first robot policy testing with MuJoCo replay and offline visual playground"
 readme = "README.md"
 requires-python = ">=3.10"
 license = {text = "MIT"}

@@ -106,6 +106,16 @@ def simulate_trace(spec: RobotSpec, actions: Sequence[Mapping[str, Any]], model_
         data.qpos[address] = value
     mj.mj_forward(model, data)
     log_every = max(1, round(0.02 / dt))
+    # Only the packaged synthetic planar arm has a measured 2D visualisation.
+    # Other MJCFs still run and produce numerical reports; do not guess geometry.
+    demo_geometry = (
+        tuple(spec.joint_names) == ("shoulder", "elbow")
+        and model.nsite == 1
+        and mj.mj_name2id(model, mj.mjtObj.mjOBJ_SITE, "tool_tip") >= 0
+        and mj.mj_name2id(model, mj.mjtObj.mjOBJ_BODY, "link_2") >= 0
+    )
+    joint_ids = [int(model.joint(name).id) for name in spec.joint_names] if demo_geometry else []
+    site_id = mj.mj_name2id(model, mj.mjtObj.mjOBJ_SITE, "tool_tip") if demo_geometry else -1
     records: list[dict[str, Any]] = []
     max_error = 0.0
     error_square_sum = 0.0
@@ -135,8 +145,16 @@ def simulate_trace(spec: RobotSpec, actions: Sequence[Mapping[str, Any]], model_
             if observed < lo - 1e-7 or observed > hi + 1e-7:
                 limit_violations += 1
         if k % log_every == 0 or k == steps:
-            records.append({"t": round(now, 6), "target": [round(x, 8) for x in target],
-                            "actual": [round(x, 8) for x in actual]})
+            row = {"t": round(now, 6), "target": [round(x, 8) for x in target],
+                   "actual": [round(x, 8) for x in actual]}
+            if demo_geometry:
+                anchors = [data.xanchor[jid] for jid in joint_ids]
+                tip = data.site_xpos[site_id]
+                points = [anchors[0], anchors[1], tip]
+                row["link_points_xy_m"] = [
+                    [round(float(pt[0]), 8), round(float(pt[1]), 8)] for pt in points
+                ]
+            records.append(row)
         if k < steps:
             mj.mj_step(model, data)
     return {
@@ -200,3 +218,6 @@ def write_simulation(output: str | Path, sim: Mapping[str, Any]) -> None:
     path.mkdir(parents=True, exist_ok=True)
     (path / "simulation.json").write_text(json.dumps(sim, indent=2) + "\n", encoding="utf-8")
     (path / "simulation.html").write_text(render_simulation_html(sim), encoding="utf-8")
+    # The SVG scene uses *recorded* world-frame anchor/site coordinates.
+    from .playground import write_playground
+    write_playground(path, sim)

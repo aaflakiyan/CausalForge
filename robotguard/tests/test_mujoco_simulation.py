@@ -57,6 +57,8 @@ class RealMujocoTests(unittest.TestCase):
         self.assertGreaterEqual(sim["metrics"]["max_tracking_error_rad"], 0)
         self.assertEqual(len(sim["model_sha256"]), 64)
         self.assertIn("Solid = actual", render_simulation_html(sim))
+        self.assertTrue(all(len(row["link_points_xy_m"]) == 3 for row in sim["records"]))
+        self.assertTrue(all(len(p) == 2 for row in sim["records"] for p in row["link_points_xy_m"]))
 
     def test_rejects_inconsistent_specification(self):
         tampered = dict(SPEC, position_limits=[[-2, 2], [-1.2, 1.2]])
@@ -93,6 +95,7 @@ class RealMujocoTests(unittest.TestCase):
             self.assertEqual(data["status"], "SIMULATION_COMPLETED")
             self.assertEqual(rejected["status"], "FAIL")
             self.assertTrue((out / "simulation.html").is_file())
+            self.assertTrue((out / "playground.html").is_file())
             self.assertTrue((out / "rejected.html").is_file())
 
     def test_cli_does_not_run_invalid_trace(self):

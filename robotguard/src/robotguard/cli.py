@@ -41,10 +41,12 @@ def main(argv: list[str] | None = None) -> int:
     sim.add_argument("--model", required=True, type=Path, help="MuJoCo MJCF XML file")
     sim.add_argument("--out", type=Path, default=Path("robotguard-output"))
     demo_sim = subs.add_parser("mujoco-demo", help="Run the packaged real-physics MuJoCo example")
+    play = subs.add_parser("playground", help="Open-source offline robot replay: measured MuJoCo physics and browser controls")
+    play.add_argument("--out", type=Path, default=Path("robotguard-output"))
     demo_sim.add_argument("--out", type=Path, default=Path("robotguard-output"))
     args = parser.parse_args(argv)
     try:
-        if args.command == "mujoco-demo":
+        if args.command in ("mujoco-demo", "playground"):
             assets = resources.files("robotguard").joinpath("assets")
             spec = RobotSpec.from_dict(json.loads(assets.joinpath("demo_spec.json").read_text(encoding="utf-8")))
             xml = assets.joinpath("demo_arm.xml").read_text(encoding="utf-8")
@@ -61,6 +63,8 @@ def main(argv: list[str] | None = None) -> int:
             print(f"Unsafe trajectory rejected ({len(rejected.violations)} pre-flight findings); no unsafe physics run")
             print(f"Safe trajectory: {simulated['status']} in MuJoCo {simulated['mujoco_version']}")
             print(f"Reproducible reports: {args.out.resolve()}/simulation.html and rejected.html")
+            if (args.out / "playground.html").is_file():
+                print(f"Browser playground: {(args.out / 'playground.html').resolve()}")
             return 0 if simulated["status"] == "SIMULATION_COMPLETED" else 1
         if args.command == "simulate":
             spec = RobotSpec.from_file(args.spec)
