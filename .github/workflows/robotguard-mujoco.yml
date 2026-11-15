@@ -1,7 +1,6 @@
 name: RobotGuard MuJoCo physics replay
 on:
   push:
-    branches: [main]
     paths:
       - 'robotguard/**'
       - '.github/workflows/robotguard-mujoco.yml'
@@ -9,6 +8,7 @@ on:
     paths:
       - 'robotguard/**'
       - '.github/workflows/robotguard-mujoco.yml'
+  workflow_dispatch:
 jobs:
   real-physics:
     runs-on: ubuntu-latest
