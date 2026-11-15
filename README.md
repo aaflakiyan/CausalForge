@@ -309,6 +309,14 @@ Integrate **two genuine, robot-compatible VLA checkpoints** into a common manipu
 [MIT](LICENSE) for original repository code. All third-party software, datasets and checkpoints retain their respective licences.
 
 
-## RobotGuard v0.2 — pre-flight checks and MuJoCo replay
+## RobotGuard Playground v0.3 — inspect real simulated motion
 
-RobotGuard is an experimental, offline validator for agent-generated joint-space commands, with an optional **real MuJoCo physics demo** and explicit limitations. Start at [`robotguard/README.md`](robotguard/README.md). Run `python -m pip install -e './robotguard[mujoco]'` and `robotguard mujoco-demo --out robotguard-output`. A PASS does not certify hardware safety.
+**No robot, API key or GPU required for the synthetic demonstration.** RobotGuard first validates declared robot joint-position commands, then runs a *real MuJoCo physics replay*. It creates an offline browser playground with play/pause/scrubbing of measured joint-anchor and tool-tip positions, separate command-vs-observation plots, JSON provenance and rejected-action reports.
+
+```bash
+python -m pip install -e './robotguard[mujoco]'
+robotguard playground --out robotguard-output
+# Open robotguard-output/playground.html
+```
+
+Read the [setup and limitations](robotguard/README.md) and [evidence-first product direction](robotguard/PRODUCT_DIRECTION.md). This is **not** a World Action Model, a Dream-1 integration, universal robotics support, real-time control or a hardware-safety certificate.
