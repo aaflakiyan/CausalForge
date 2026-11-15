@@ -1,0 +1,5 @@
+{"t": 0.0, "position": [0.0, 0.0, 0.0], "units": "rad", "frame": "joint"}
+{"t": 0.1, "position": [0.03, 0.04, 0.02], "units": "rad", "frame": "joint"}
+{"t": 0.2, "position": [1.8, 0.05, 0.0], "units": "rad", "frame": "joint"}
+{"t": 0.3, "position": [2.7, 0.10, 0.01], "units": "rad", "frame": "joint"}
+{"t": 0.4, "position": [2.8, 0.10, 0.0], "units": "deg", "frame": "joint"}

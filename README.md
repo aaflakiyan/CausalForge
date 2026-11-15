@@ -7,6 +7,22 @@
 [![MuJoCo](https://img.shields.io/badge/Physics-MuJoCo-2563EB)](SIMULATION_ENVIRONMENTS.md)
 [![Licence](https://img.shields.io/badge/Licence-MIT-16A34A)](LICENSE)
 
+## RobotGuard Playground v0.4 — connect a policy, test it in MuJoCo, inspect actual motion
+
+**[Open the integration guide](robotguard/INTEGRATIONS.md)** · **[RobotGuard documentation](robotguard/README.md)** · **[Verified physics run](https://github.com/aaflakiyan/CausalForge/actions/runs/43766847966)**
+
+Run the included two-policy comparison in real MuJoCo, with no hardware, GPU or API key:
+
+```bash
+python -m pip install -e './robotguard[mujoco]'
+robotguard showcase --out robotguard-showcase
+# Open robotguard-showcase/index.html
+```
+
+The offline dashboard shows synchronised recorded motion, commanded versus observed trajectories, tracking errors, model/input hashes and a deliberately rejected trajectory. Both built-in policies are **deterministic reference profiles, not pretrained AI models**. The Python callable adapter accepts explicitly named joint positions and refuses missing joints, unsupported units and malformed timestamps. [See a runnable policy example](robotguard/examples/connect_my_policy.py).
+
+The [GitHub MuJoCo workflow](https://github.com/aaflakiyan/CausalForge/actions/runs/43766847966) successfully ran **42 tests**, separate physics replays and the generated dashboard. This validates the **synthetic two-joint example**, not robot-hardware safety or arbitrary robot-model compatibility. **Dream-1, OpenPI and LeRobot are not natively connected to RobotGuard**; their adapters require specific, tested action contracts.
+
 > **Research prototype — not a trained humanoid foundation model.** CausalForge currently demonstrates synthetic policy teachers, physically testable hypotheses, experiment selection, recorded action replay, and small-scale MuJoCo evaluation. Pretrained GR00T / π₀ teachers and real-humanoid validation are **not yet implemented**.
 
 ## Try the validated policy API in one command
@@ -294,3 +310,16 @@ Integrate **two genuine, robot-compatible VLA checkpoints** into a common manipu
 ## Licence
 
 [MIT](LICENSE) for original repository code. All third-party software, datasets and checkpoints retain their respective licences.
+
+
+## RobotGuard Playground v0.3 — inspect real simulated motion
+
+**No robot, API key or GPU required for the synthetic demonstration.** RobotGuard first validates declared robot joint-position commands, then runs a *real MuJoCo physics replay*. It creates an offline browser playground with play/pause/scrubbing of measured joint-anchor and tool-tip positions, separate command-vs-observation plots, JSON provenance and rejected-action reports.
+
+```bash
+python -m pip install -e './robotguard[mujoco]'
+robotguard playground --out robotguard-output
+# Open robotguard-output/playground.html
+```
+
+Read the [setup and limitations](robotguard/README.md) and [evidence-first product direction](robotguard/PRODUCT_DIRECTION.md). This is **not** a World Action Model, a Dream-1 integration, universal robotics support, real-time control or a hardware-safety certificate.
