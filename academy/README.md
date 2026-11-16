@@ -79,3 +79,7 @@ Read [Lesson 01](docs/LESSON_01.md), [Architecture](docs/ARCHITECTURE.md) and [P
 ## One-click cloud development environment
 
 Select the repository's **Physical AI Academy (MuJoCo, Python 3.12)** devcontainer when creating a GitHub Codespace. The configuration installs the dependencies and starts the browser lab on private forwarded port **8000**. Codespaces quotas/billing apply. If the background service does not start, use the manual `uvicorn` command above.
+
+## Verified results
+
+The initial six-job GitHub Actions matrix passed on Ubuntu, Windows and macOS (Python 3.11 and 3.13), with the physics integration test and benchmark using MuJoCo. Details, recorded results and limitations are in [Validation evidence](docs/VALIDATION.md).
