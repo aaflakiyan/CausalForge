@@ -28,6 +28,7 @@ class ReachingLab:
         self.model.site_pos[0, :2] = self.target
         self.mujoco.mj_forward(self.model, self.data)
         self.history = []
+        self._tick = 0
         return self.snapshot()
 
     def configure(self, *, target=None, gain=None, noise=None):
@@ -52,8 +53,8 @@ class ReachingLab:
         if not isinstance(steps, int) or not 1 <= steps <= 100:
             raise ValueError("steps must be an integer between 1 and 100")
         dt = float(self.model.opt.timestep)
-        for index in range(steps):
-            if index % 5 == 0:
+        for _ in range(steps):
+            if self._tick % 5 == 0:
                 q = self.data.qpos[:2].copy()
                 # Noise perturbs the *observed tip position*, not the physics.
                 observed = forward(q) + self.rng.normal(0, self.noise, size=2)
@@ -65,6 +66,7 @@ class ReachingLab:
                 dq = dls_velocity(q, perceived_target, gain=self.gain)
                 self.data.ctrl[:2] = np.clip(q + 5*dt*dq, -3.12, 3.12)
             self.mujoco.mj_step(self.model, self.data)
+            self._tick += 1
         state = self.snapshot()
         self.history.append({"t": state["time_s"], "error": state["error_m"]})
         self.history = self.history[-180:]
