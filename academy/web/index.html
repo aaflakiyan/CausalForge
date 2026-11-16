@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Physical AI Academy · Lab 01</title><link rel="stylesheet" href="/static/style.css"></head>
+<body>
+<header class="top"><div><div class="eyebrow">PHYSICAL AI ACADEMY · LAB 01</div><h1>Your first intelligent robot</h1><p>Make an arm reach a cup. Change its behaviour. Discover the physics and code behind every movement.</p></div><span class="pill">MuJoCo physics · interactive</span></header>
+<main>
+<section class="map" aria-label="Physical AI system map"><span class="map-title">THE BIG PICTURE</span><div class="stages">
+<div class="stage"><strong>01 · Goal</strong><span>Reach the cup</span></div><div class="stage"><strong>02 · Sense</strong><span>Joint state</span></div><div class="stage"><strong>03 · Understand</strong><span>Target error</span></div><div class="stage"><strong>04 · Plan</strong><span>Desired motion</span></div><div class="stage active"><strong>05 · Control</strong><span>Move precisely</span></div><div class="stage"><strong>06 · Act</strong><span>Robot + world</span></div></div><div class="loop">↶ Real-time feedback: measure → correct → measure again</div></section>
+<div class="columns">
+<section class="card sim"><div class="cardhead"><div><span class="eyebrow">EXPERIMENT</span><h2>Move the robot to the cup</h2></div><span id="engine-status" class="status">Connecting…</span></div>
+<div class="scene"><svg id="robot" viewBox="0 0 660 500" role="img" aria-label="Top-down schematic driven by MuJoCo joint states"><defs><pattern id="grid" width="42" height="42" patternUnits="userSpaceOnUse"><path d="M42 0H0V42" fill="none" stroke="#e8edf2" stroke-width="1"/></pattern></defs><rect width="660" height="500" fill="#f9fbfd"/><rect width="660" height="500" fill="url(#grid)"/>
+<path d="M72 400H602" stroke="#ced8e0" stroke-width="2"/><text x="83" y="427" class="small-text">Top-down view · positions in metres · not to scale</text>
+<circle id="target" cx="435" cy="175" r="28" fill="#f3c3a6" stroke="#c87547" stroke-width="3"/><text id="cup-label" class="small-text" x="467" y="165">CUP / TARGET</text>
+<path id="arm1" stroke="#315678" stroke-width="26" stroke-linecap="round" d="M330 250L440 250"/><path id="arm2" stroke="#5f9a9b" stroke-width="22" stroke-linecap="round" d="M440 250L480 160"/>
+<circle cx="330" cy="250" r="27" fill="#183650" stroke="#fff" stroke-width="6"/><circle id="elbow" cx="440" cy="250" r="17" fill="#f2f6f7" stroke="#315678" stroke-width="6"/><circle id="tip" cx="480" cy="160" r="11" fill="#178b71" stroke="#fff" stroke-width="4"/>
+<path id="error-line" d="" stroke="#bd5f36" stroke-width="2" stroke-dasharray="6 6"/><text x="20" y="30" class="small-text">SIMULATED TWO-JOINT ARM · NOT A FULL INDUSTRIAL ROBOT</text></svg></div>
+<div class="metrics"><div><span>Target error</span><strong id="error">—</strong></div><div><span>Simulation time</span><strong id="time">—</strong></div><div><span>Outcome</span><strong id="outcome">—</strong></div></div>
+<div class="buttonrow"><button id="play" class="primary">▶ Run physics</button><button id="step" class="secondary">Step once</button><button id="reset" class="secondary">Reset</button></div><p class="hint">The robot outline is a simplified top-down drawing. Joint motion and measured positions come from the actual MuJoCo engine on the Python server. Reaching is implemented; grasping and lifting are future labs.</p></section>
+<aside class="card controls"><span class="eyebrow">WHAT-IF LAB</span><h2>Change one thing</h2><p>Before moving a slider, predict how the robot will respond.</p>
+<label for="x">Cup position · X <output id="x-val">0.45 m</output></label><input id="x" type="range" min="0.20" max="0.60" step="0.01" value="0.45">
+<label for="y">Cup position · Y <output id="y-val">0.35 m</output></label><input id="y" type="range" min="-0.40" max="0.45" step="0.01" value="0.35">
+<label for="gain">Controller gain <output id="gain-val">2.5</output></label><input id="gain" type="range" min="0.2" max="6" step="0.1" value="2.5">
+<label for="noise">Position-sensing noise <output id="noise-val">0.000 m</output></label><input id="noise" type="range" min="0" max="0.06" step="0.002" value="0">
+<div class="tipbox"><b>Try this</b><p>Run with zero noise. Increase noise and observe the tracking error. Then lower the gain and compare.</p></div>
+<div class="objective"><strong>Your challenge</strong><p>Reach within <b>2.5 cm</b> of the cup centre. Explain which variable affected accuracy and why.</p></div><p id="message" class="message" role="status"></p></aside>
+</div>
+<div class="columns bottom"><section class="card"><span class="eyebrow">CODE X-RAY · PREVIEW</span><h2>Five lines worth understanding</h2><pre><code><span class="comment"># 1. Observe where the robot is</span>
+q = robot.joint_positions()
+<span class="comment"># 2. Compare the tip position with the cup</span>
+error = target - forward_kinematics(q)
+<span class="comment"># 3. Convert Cartesian error to joint motion</span>
+dq = damped_least_squares(q, target)
+<span class="comment"># 4. Send a small joint update</span>
+robot.command(q + dt * dq)
+<span class="comment"># 5. Measure again and repeat</span></code></pre><p class="hint">Conceptual pseudocode, not executable as shown. See <code>physical_ai_lab/engine.py</code> and <code>kinematics.py</code> for the real implementation.</p></section>
+<section class="card"><span class="eyebrow">UNDERSTAND & VERIFY</span><h2>What makes it intelligent?</h2><p>The robot uses an error signal and a Jacobian to decide how its joints should move towards the target. MuJoCo simulates the resulting dynamics; feedback corrects deviations.</p><div class="equation">q̇ = Jᵀ (J Jᵀ + λ² I)⁻¹ K (x* − x)</div><p>The damping term limits extreme commands near singularities. This is classical feedback control, not a learned AI policy yet.</p><h3>Experiment log</h3><svg id="history" viewBox="0 0 500 120" aria-label="Tracking error history" preserveAspectRatio="none"><path id="trace" d="" fill="none" stroke="#187e88" stroke-width="3"/></svg><p class="hint">More advanced perception, learning, ROS 2 and Isaac Sim will build on this validated baseline.</p></section></div>
+<section class="next"><div><span class="eyebrow">WHAT'S NEXT</span><h2>Lab 02 · Give the robot vision</h2><p>Replace perfect target coordinates with camera-based estimates, then test whether the robot can still reach accurately.</p></div><a href="https://github.com/aaflakiyan/CausalForge" rel="noreferrer">View the research repository ↗</a></section>
+</main><footer>Physical AI Academy · Educational 2-DoF model · No hardware actuation · MuJoCo physics on the server</footer><script src="/static/app.js" defer></script></body></html>
