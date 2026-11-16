@@ -1,0 +1,24 @@
+<mujoco model="physical_ai_academy_two_link_reaching">
+  <compiler angle="radian"/>
+  <option timestep="0.005" integrator="implicitfast" gravity="0 0 0"/>
+  <visual><global offwidth="640" offheight="640"/></visual>
+  <worldbody>
+    <geom name="ground" type="plane" pos="0 0 -0.04" size="1.2 1.2 0.02" rgba="0.96 0.97 0.98 1" contype="0" conaffinity="0"/>
+    <camera name="top" pos="0 0 1.5" xyaxes="1 0 0 0 1 0"/>
+    <!-- The cup is a stationary target marker, not a graspable physics body. -->
+    <site name="cup_target" pos="0.45 0.35 0.05" type="sphere" size="0.045" rgba="0.9 0.49 0.28 1"/>
+    <body name="link1" pos="0 0 0.05">
+      <joint name="shoulder" type="hinge" axis="0 0 1" range="-3.13 3.13" damping="0.3"/>
+      <geom name="upper_arm" type="capsule" fromto="0 0 0 0.4 0 0" size="0.03" density="800" rgba="0.24 0.43 0.63 1" contype="0" conaffinity="0"/>
+      <body name="link2" pos="0.4 0 0">
+        <joint name="elbow" type="hinge" axis="0 0 1" range="-3.13 3.13" damping="0.25"/>
+        <geom name="forearm" type="capsule" fromto="0 0 0 0.3 0 0" size="0.026" density="680" rgba="0.39 0.68 0.71 1" contype="0" conaffinity="0"/>
+        <site name="tip" pos="0.3 0 0" size="0.023" rgba="0.10 0.49 0.36 1"/>
+      </body>
+    </body>
+  </worldbody>
+  <actuator>
+    <position name="shoulder_motor" joint="shoulder" kp="140" kv="14"/>
+    <position name="elbow_motor" joint="elbow" kp="110" kv="11"/>
+  </actuator>
+</mujoco>

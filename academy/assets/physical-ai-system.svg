@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1260 250" role="img" aria-labelledby="t d">
+<title id="t">Physical AI: from goal to action</title><desc id="d">Goal, perception, understanding, planning, control and action, with real-time feedback and a separate slower learning process.</desc>
+<rect width="1260" height="250" rx="20" fill="#fff"/><g font-family="Arial,sans-serif">
+<text x="30" y="34" font-size="24" font-weight="bold" fill="#19354b">How a Physical AI system works</text>
+<text x="30" y="56" font-size="13" fill="#627988">One task · six stages · two timescales</text>
+<g transform="translate(30,80)">
+<rect width="186" height="85" rx="12" fill="#fceeed" stroke="#f4cbc5"/><text x="16" y="33" font-size="19" font-weight="bold" fill="#9d514b">01 · Goal</text><text x="16" y="59" font-size="14" fill="#395468">Reach the cup</text>
+</g><g transform="translate(229,80)"><rect width="186" height="85" rx="12" fill="#eaf4fb" stroke="#c9dfef"/><text x="16" y="33" font-size="19" font-weight="bold" fill="#27658a">02 · Sense</text><text x="16" y="59" font-size="14" fill="#395468">Observe state</text></g>
+<g transform="translate(428,80)"><rect width="186" height="85" rx="12" fill="#f0edfc" stroke="#d9d1f0"/><text x="16" y="33" font-size="19" font-weight="bold" fill="#6853a1">03 · Understand</text><text x="16" y="59" font-size="14" fill="#395468">Compute error</text></g>
+<g transform="translate(627,80)"><rect width="186" height="85" rx="12" fill="#fff4e5" stroke="#f2ddbd"/><text x="16" y="33" font-size="19" font-weight="bold" fill="#a9712c">04 · Plan</text><text x="16" y="59" font-size="14" fill="#395468">Choose motion</text></g>
+<g transform="translate(826,80)"><rect width="186" height="85" rx="12" fill="#e9f6ef" stroke="#b9ddc7"/><text x="16" y="33" font-size="19" font-weight="bold" fill="#247352">05 · Control</text><text x="16" y="59" font-size="14" fill="#395468">Track safely</text></g>
+<g transform="translate(1025,80)"><rect width="186" height="85" rx="12" fill="#e7f3fb" stroke="#bfdaed"/><text x="16" y="33" font-size="19" font-weight="bold" fill="#27658a">06 · Act</text><text x="16" y="59" font-size="14" fill="#395468">Change the world</text></g>
+<g stroke="#526d7c" stroke-width="2" fill="none"><path d="M216 122h13m186 0h13m186 0h13m186 0h13m186 0h13"/></g>
+<path d="M1118 165v25H322v-25" fill="none" stroke="#318b9a" stroke-width="3"/><path d="m316 171 6-11 6 11" fill="none" stroke="#318b9a" stroke-width="3"/><text x="430" y="186" font-size="13" fill="#267386">FAST: feedback corrects movements</text>
+<path d="M1118 200v26H120v-61" fill="none" stroke="#729b83" stroke-width="2" stroke-dasharray="6 5"/><text x="490" y="241" font-size="13" fill="#4f8065">SLOWER: data and training improve future policies</text>
+</g></svg>

@@ -1,0 +1,10 @@
+{
+  "name": "Physical AI Academy (MuJoCo, Python 3.12)",
+  "image": "mcr.microsoft.com/devcontainers/python:3.12",
+  "forwardPorts": [8000],
+  "portsAttributes": {
+    "8000": { "label": "Physical AI Academy Lab 01", "onAutoForward": "openBrowser", "visibility": "private" }
+  },
+  "postCreateCommand": "python -m pip install -e './academy[dev]'",
+  "postStartCommand": "python -m uvicorn physical_ai_lab.app:app --app-dir academy --host 0.0.0.0 --port 8000"
+}
